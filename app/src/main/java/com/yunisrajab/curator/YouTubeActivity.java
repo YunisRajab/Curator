@@ -31,6 +31,7 @@ public class YouTubeActivity extends YouTubeBaseActivity implements YouTubePlaye
     private Handler mHandler = null;
     private SeekBar mSeekBar;
     private String TAG = "YT";
+    String url;
 
     @Override
     public void onBackPressed() {
@@ -76,6 +77,17 @@ public class YouTubeActivity extends YouTubeBaseActivity implements YouTubePlaye
             }
         };
 
+//        TODO handle mobile links
+        url = getIntent().getStringExtra("url");
+        if (url.contains("=")) {
+            url = url.substring(url.lastIndexOf("=") + 1);
+        }   else {
+            url = url.substring(url.lastIndexOf("/") + 1);
+            Log.e(TAG,url);
+        }
+        Log.e(TAG,url);
+        mPlayButtonLayout.setVisibility(View.INVISIBLE);
+
         //TODO add seek controls (10 sec increment) and sync with seekbar
 //        Button seekToButton = (Button) findViewById(R.id.seekButton);
 //        seekToButton.setOnClickListener(new View.OnClickListener() {
@@ -94,7 +106,7 @@ public class YouTubeActivity extends YouTubeBaseActivity implements YouTubePlaye
         displayCurrentTime();
 
         if (!wasRestored) {
-            player.cueVideo("fhWaJi1Hsfo"); // Plays https://www.youtube.com/watch?v=fhWaJi1Hsfo
+            player.cueVideo(url); // Plays https://www.youtube.com/watch?v=fhWaJi1Hsfo
         }
 
         player.setPlayerStyle(YouTubePlayer.PlayerStyle.MINIMAL);
@@ -147,6 +159,7 @@ public class YouTubeActivity extends YouTubeBaseActivity implements YouTubePlaye
         public void onPaused() {
             // Called when playback is paused, either due to user action or call to pause().
             showMessage("Paused");
+            mPlayer.setFullscreen(false);
             mPlayButtonLayout.setVisibility(View.VISIBLE);
             mHandler.removeCallbacks(runnable);
         }
@@ -235,7 +248,7 @@ public class YouTubeActivity extends YouTubeBaseActivity implements YouTubePlaye
                 break;
             case R.id.pause_video:
                 if (null != mPlayer && mPlayer.isPlaying())
-                    mPlayer.setFullscreen(false);
+                    mPlayer.setFullscreen(true);
                 break;
         }
     }

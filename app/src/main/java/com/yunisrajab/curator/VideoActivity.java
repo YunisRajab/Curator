@@ -22,13 +22,12 @@ public class VideoActivity extends Activity{
         setContentView(R.layout.activity_video);
 
         vidControl = new MediaController(this);
-        mVideoView = (VideoView)    findViewById(R.id.myVideo);
+        mVideoView =    findViewById(R.id.myVideo);
 
         vidControl.setAnchorView(mVideoView);
         mVideoView.setMediaController(vidControl);
-//        MainActivity mainActivity = new MainActivity();
-        String vidAddress = "https://www.youtube.com/watch?v=_drAHMoi6Rs";
-        Log.e(TAG,  "URI: "+vidAddress);
+        String vidAddress = getIntent().getStringExtra("url");
+        Log.i(TAG,  "URI: "+vidAddress);
         Uri vidUri = Uri.parse(vidAddress);
         mVideoView.setVideoURI(vidUri);
         mVideoView.start();

@@ -1,13 +1,22 @@
 package com.yunisrajab.curator;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.AudioTrack;
 import android.media.MediaRecorder;
 import android.net.Uri;
+import android.os.Environment;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -18,6 +27,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.VideoView;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -25,207 +36,231 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Enumeration;
 
-public class MainActivity extends AppCompatActivity {
+
+public class MainActivity extends AppCompatActivity{
 
 
-    TextView view;
-    Button sendButton, receiveButton, startButton, ytButton;
-    Switch parentSwitch;
-    EditText editAddress, editPort, uriText;
+    Button addButton, submitButton, childButton, logoutButton;
+    EditText nameText, urlText;
     String TAG = "Curator";
-    String mAddress;
-    int port, minBufSize = 1280;
-    DatagramSocket mSocket;
-    boolean status = false;
+    String FILENAME = "MediaList.txt";
+    String PACKAGE_NAME;
+    ArrayList<String> mArray;
+    String SOURCEFILE_PATH;
+    String USER_DIRECTORY;
     VideoView mVideoView;
     MediaController vidControl;
-    String uri;
+    private FTPActivity ftpClient = null;
+    UserLocalData   useLocalData;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        PACKAGE_NAME = getApplicationContext().getPackageName();
+        SOURCEFILE_PATH = Environment.getExternalStorageDirectory()+"/Android/data/"+PACKAGE_NAME+"/";
+
         vidControl = new MediaController(this);
         mVideoView = (VideoView)    findViewById(R.id.myVideo);
-        view = (TextView)   findViewById(R.id.textView);
-        view.setText(getLocalIPAddress());
-        sendButton = (Button)   findViewById (R.id.send_button);
-        receiveButton = (Button)    findViewById (R.id.receive_button);
-        startButton = (Button)  findViewById (R.id.startButton);
-        ytButton = (Button)  findViewById (R.id.ytButton);
-        parentSwitch = (Switch) findViewById(R.id.parentSwitch);
+        addButton = (Button)    findViewById(R.id.addButton);
+        submitButton = (Button)    findViewById(R.id.submitButton);
+        childButton = (Button) findViewById(R.id.childButton);
+        logoutButton = (Button) findViewById(R.id.logoutButton);
 
-        sendButton.setOnClickListener (sendListener);
-        receiveButton.setOnClickListener (receiveListener);
-        startButton.setOnClickListener(startListener);
-        ytButton.setOnClickListener(startListener);
+        nameText = (EditText)    findViewById(R.id.nameText);
+        urlText = (EditText)    findViewById(R.id.urlText);
 
-        editAddress = (EditText)    findViewById(R.id.addText);
-        editPort = (EditText)   findViewById(R.id.portText);
-        uriText = (EditText)    findViewById(R.id.uriText);
+        nameText.addTextChangedListener(textWatcher);
+        urlText.addTextChangedListener(textWatcher);
+
+        addButton.setEnabled(false);
+        submitButton.setEnabled(false);
+
+        childButton.setOnClickListener(childListener);
+        addButton.setOnClickListener(addListener);
+        submitButton.setOnClickListener(addListener);
+        logoutButton.setOnClickListener(logoutListener);
+
+        ftpClient = new FTPActivity();
+
+        useLocalData   =   new UserLocalData(this);
+
+//        TODO share link into app instead of manual cop+paste
+//        TODO add playlists instead of individual videos
+//        TODO only take urls and extract titles(and thumbnails)
+        if (!isReadStorageAllowed())    requestStoragePermission();
+
+        if (!useLocalData.getUserLoggedIn())    {
+            Intent intentMain = new Intent(getApplicationContext() , LoginActivity.class);
+            getApplicationContext().startActivity(intentMain);
+            Log.i(TAG,"Login layout");
+            finish();
+        }
+
+        retrieveFile();
     }
 
-    private final View.OnClickListener sendListener = new View.OnClickListener() {
+    private TextWatcher textWatcher = new TextWatcher() {
+        @Override
+        public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
+        @Override
+        public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+            String  name    =   nameText.getText().toString().trim();
+            String  url =   urlText.getText().toString().trim();
+            addButton.setEnabled(!name.isEmpty() && !url.isEmpty());
+        }
+        @Override
+        public void afterTextChanged(Editable editable) {}
+    };
+
+    private final View.OnClickListener addListener = new View.OnClickListener() {
 
         @Override
-        public void onClick(View arg0) {
+        public void onClick(View view) {
+            if  (view==addButton) {
 
-            mAddress = editAddress.getText().toString();
-
-            Thread streamThread = new Thread(new Runnable() {
-
-                @Override
-                public void run() {
-                    try {
-                        mSocket = new DatagramSocket(/*port*/);
-                        Log.d(TAG, "Socket Created");
-
-                        byte[] buffer = new byte[minBufSize];
-
-                        Log.d(TAG,"Buffer created of size " + minBufSize);
-                        DatagramPacket packet;
-
-                        final InetAddress destination = InetAddress.getByName(mAddress);
-
-                        status = true;
-                        while(status) {
-                            //putting buffer in the packet
-                            packet = new DatagramPacket (buffer,buffer.length,destination,port);
-                            mSocket.send(packet);
-//                        Log.d(TAG,"MinBufferSize: " +minBufSize);
-                        }
-                        status = false;
-                        mSocket.disconnect();
-                        mSocket.close();
-                    }
-                    catch(UnknownHostException e) {
-                        Log.e(TAG, "UnknownHostException");
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        Log.e(TAG, "IOException");
-                    } catch (Exception e)
-                    {
-                        Log.e(TAG, "Exception: "+e);
-                    }
+                if (mArray==null)   {
+                    mArray = new ArrayList<>();
                 }
+                mArray.add(nameText.getText().toString()+"\n");
+                mArray.add(urlText.getText().toString().trim()+"\n");
+                nameText.setText("");
+                urlText.setText("");
+                addButton.setEnabled(false);
+                submitButton.setEnabled(true);
 
-            });
-            streamThread.start();
-
+            }   else    if (view==submitButton) {
+                createFile();
+                new Thread(new Runnable() {
+                    public void run() {
+                        // host – your FTP address
+                        // username & password – for your secured login
+                        // 21 default gateway for FTP
+                        ftpClient.ftpConnect("192.168.0.17", "Yunis Rajab", "qwerty27", 21);
+                        ftpClient.ftpUpload(SOURCEFILE_PATH+FILENAME, FILENAME,
+                                "", getApplicationContext());
+                        ftpClient.ftpDisconnect();
+                    }
+                }).start();
+                submitButton.setEnabled(false);
+            }
         }
     };
 
-    private final View.OnClickListener receiveListener = new View.OnClickListener() {
-
-        @Override
-        public void onClick(View arg0) {
-
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        mSocket = new DatagramSocket(port);
-                        byte[] buff = new byte[minBufSize];
-                        status = true;
-                        while(status) {
-                            // Play back the audio received from packets
-                            DatagramPacket packet = new DatagramPacket(buff, minBufSize);
-                            mSocket.receive(packet);
-                            Log.i(TAG, "Packet received: " + packet.getLength());
-                        }
-                        status = false;
-                        mSocket.disconnect();
-                        mSocket.close();
-                    }catch (Exception e)
-                    {
-                        Log.e(TAG, "Exception: "+e);
-                    }
-                }
-            }).start();
-
-        }
-    };
-
-    private final View.OnClickListener startListener = new View.OnClickListener() {
+    private final View.OnClickListener childListener = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
 
-            if (view==startButton)  {
-                uri =   uriText.getText().toString();
-                Intent intentMain = new Intent(MainActivity.this , VideoActivity.class);
-                MainActivity.this.startActivity(intentMain);
-                Log.i(TAG,"Video layout");
+            Intent intentMain = new Intent(getApplicationContext() , ChildActivity.class);
+            getApplicationContext().startActivity(intentMain);
+            Log.i(TAG,"Child layout");
+            finish();
 
-            }   else if (view==ytButton)    {
-                Intent intentMain = new Intent(MainActivity.this , YouTubeActivity.class);
-                MainActivity.this.startActivity(intentMain);
-                Log.i(TAG,"YouTube layout");
-            }
+        }
+    };
+
+    private final View.OnClickListener  logoutListener  =   new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            useLocalData.setUserLoggedIn(false);
+            Intent intent = new Intent(getApplicationContext() , LoginActivity.class);
+            getApplicationContext().startActivity(intent);
+            Log.i(TAG,"Login layout");
             finish();
         }
     };
 
-    private static String getLocalIPAddress () {
-        String ip = "";
+    public void createFile() {
+//            TODO  don't overwrite if file exists (only append)
         try {
-            for (Enumeration en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
-                NetworkInterface intf = (NetworkInterface) en.nextElement();
-                for (Enumeration enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements();) {
-                    InetAddress inetAddress = (InetAddress) enumIpAddr.nextElement();
-                    if (!inetAddress.isLoopbackAddress()) {
-//                        ip= inetAddress.getAddress();
-                        String sAddr = inetAddress.getHostAddress();
-                        boolean isIPv4 = sAddr.indexOf(':')<0;
-
-                        if (isIPv4)
-                            ip = sAddr;
-                    }
+            File root = new File(SOURCEFILE_PATH);
+            if (!root.exists()) {
+                boolean success = root.mkdir();
+                Log.d(TAG, "Create Directory: "+success);
+            }
+            File txtFile = new File(root, FILENAME);
+            FileWriter writer = new FileWriter(txtFile);
+            if (mArray!=null)   {
+                for (int i=0;   i<mArray.size();  i++)    {
+                    writer.append(mArray.get(i));
                 }
             }
-        } catch (SocketException ex) {
-            Log.i("SocketException ", ex.toString());
+            writer.flush();
+            writer.close();
+            mArray = null;
+            Toast.makeText(this, "Saved : " + txtFile.getAbsolutePath(),
+                    Toast.LENGTH_LONG).show();
+        } catch (IOException e) {
+            Log.e(TAG,"Exception: "+e);
+            e.printStackTrace();
         }
-        return ip;
     }
 
-    public String getUri() {
-        return uri;
-    }
-
-    public void setText()  {
-
-        runOnUiThread(new Runnable() {
+    private void retrieveFile()  {
+        Thread t;
+        t = new Thread(new Runnable() {
             @Override
             public void run() {
-
-                String str = "NOT WORKING!";
-                try {
-                    String text = "WORKING!";
-                    byte[] bytes = text.getBytes("UTF-8");
-                    str = new String(bytes, "UTF-8");
-
-                }   catch (Exception e)  {
-                    Log.e(TAG,"Exception: "+e);
-                }
-
-
-//                view.setText(receiver.getText());
-                Log.v(TAG, "aftr txt.settext");
-//                            bar.setProgress(5);
-                Log.d(TAG, "received");
-                Toast.makeText(MainActivity.this,"OnClickListener : received",Toast.LENGTH_LONG).show();
+                ftpClient.ftpConnect("192.168.0.17", "Yunis Rajab", "qwerty27", 21);
+                ftpClient.ftpDownload("/"+USER_DIRECTORY+"/"+FILENAME, SOURCEFILE_PATH+FILENAME);
+                ftpClient.ftpDisconnect();
             }
         });
-
+        try {
+            t.start();
+            t.join();
+        }   catch (Exception e) {
+            e.printStackTrace();
+        }
+//        readFile();
     }
 
+    //Requesting permission
+    private void requestStoragePermission(){
+
+        if (ActivityCompat.shouldShowRequestPermissionRationale(this,Manifest.permission.WRITE_EXTERNAL_STORAGE)){
+            //If the user has denied the permission previously your code will come to this block
+            //Here you can explain why you need this permission
+            //Explain here why you need this permission
+        }
+
+        //And finally ask for the permission
+        ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},23);
+    }
+
+    //This method will be called when the user will tap on allow or deny
     @Override
-    public void onBackPressed() {
-        Log.i(TAG,"Quitting!");
-        finish();
-        System.exit(0);
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+
+        //Checking the request code of our request
+        if(requestCode == 23){
+
+            //If permission is granted
+            if(grantResults.length >0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
+
+                //Displaying a toast
+                Toast.makeText(this,"Permission granted now you can read the storage",Toast.LENGTH_LONG).show();
+            }else{
+                //Displaying another toast if permission is not granted
+                Toast.makeText(this,"Oops you just denied the permission",Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    private boolean isReadStorageAllowed() {
+        //Getting the permission status
+        int result = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+
+        //If permission is granted returning true
+        if (result == PackageManager.PERMISSION_GRANTED)
+            return true;
+
+        //If permission is not granted returning false
+        return false;
     }
 }
