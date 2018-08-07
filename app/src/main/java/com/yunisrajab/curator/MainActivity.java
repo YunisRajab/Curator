@@ -27,8 +27,17 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.VideoView;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthResult;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -59,6 +68,14 @@ public class MainActivity extends AppCompatActivity{
     private FTPActivity ftpClient = null;
     UserLocalData   useLocalData;
 //    DatabaseReference   mDatabaseReference;
+Button  loginButton;
+    TextView    emailText, passText;
+    UserLocalData userLocalData;
+    DatabaseReference   mDatabaseReference;
+    ArrayList<String>   mUsers  =   new ArrayList<>();
+    ArrayList<String>   mKeys  =   new ArrayList<>();
+    FirebaseAuth mAuth;
+    FirebaseAuth.AuthStateListener  mAuthListener;
 
 
     @Override
@@ -85,10 +102,15 @@ public class MainActivity extends AppCompatActivity{
         addButton.setEnabled(false);
         submitButton.setEnabled(false);
 
-        childButton.setOnClickListener(childListener);
+        childButton.setOnClickListener(childSwitch);
         addButton.setOnClickListener(addListener);
         submitButton.setOnClickListener(addListener);
-        logoutButton.setOnClickListener(logoutListener);
+        logoutButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                initLogin();
+            }
+        });
 
         ftpClient = new FTPActivity();
 
@@ -100,14 +122,188 @@ public class MainActivity extends AppCompatActivity{
         if (!isReadStorageAllowed())    requestStoragePermission();
 
         if (!useLocalData.getUserLoggedIn())    {
-            Intent intentMain = new Intent(getApplicationContext() , LoginActivity.class);
-            getApplicationContext().startActivity(intentMain);
-            Log.i(TAG,"Login layout");
-            finish();
+            initLogin();
         }
 //        mDatabaseReference  = FirebaseDatabase.getInstance().getReference();
 
 //        retrieveFile();
+
+        userLocalData   =   new UserLocalData(this);
+
+        mDatabaseReference  = FirebaseDatabase.getInstance().getReference();
+        mDatabaseReference.addValueEventListener(valueListener);
+        mDatabaseReference.addChildEventListener(childListener);
+        mAuth   =   FirebaseAuth.getInstance();
+        mAuthListener   =   new FirebaseAuth.AuthStateListener() {
+            @Override
+            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+
+                if (firebaseAuth.getCurrentUser()   !=  null)   {
+
+//                    intent User Account
+                }
+            }
+        };
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        mAuth.addAuthStateListener(mAuthListener);
+    }
+
+    private View.OnClickListener loginListener  =   new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            String  email   =   emailText.getText().toString().trim();
+            String  password    =   passText.getText().toString().trim();
+
+            if (!userExists())    {
+//                TODO get user password from server
+//                if (!password==password on FTP) {
+//                    passText.setText("");
+//                    Toast.makeText(getApplicationContext(), "Incorrect password",   Toast.LENGTH_LONG);
+//                }
+
+            }   else {
+                User    user    =   new User(email, password);
+                userLocalData.setUserLoggedIn(true);
+                userLocalData.storeUserData(user);
+
+                createUser(email,password);
+
+                mAuth.signInWithEmailAndPassword(email, password).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<AuthResult> task) {
+                        if (!task.isSuccessful())    {
+                            Toast.makeText(getApplicationContext(), "Sign in error",    Toast.LENGTH_LONG).show();
+                        }   else    {
+                            Intent intent = new Intent(getApplicationContext() , MainActivity.class);
+                            getApplicationContext().startActivity(intent);
+                            Log.i("Curator","Main layout");
+                            finish();
+                        }
+                    }
+                });
+
+//                HashMap<String,String> dataMap  =   new HashMap<>();
+//                dataMap.put("Email",email);
+//                dataMap.put("Password",password);
+//                mDatabaseReference.push().setValue(dataMap).addOnCompleteListener(new OnCompleteListener<Void>() {
+//                    @Override
+//                    public void onComplete(@NonNull Task<Void> task) {
+//                        if (task.isSuccessful())    {
+//                            Toast.makeText(getApplicationContext(),"Success",Toast.LENGTH_LONG).show();
+//                        }   else {
+//                            Toast.makeText(getApplicationContext(),"Error!",Toast.LENGTH_LONG).show();
+//                        }
+//                    }
+//                });
+            }
+        }
+    };
+
+    private ChildEventListener childListener   =   new ChildEventListener() {
+        @Override
+        public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+            String value    =   dataSnapshot.getValue().toString();
+            String key    =   dataSnapshot.getKey();
+
+            mUsers.add(value);
+            mKeys.add(key);
+        }
+
+        @Override
+        public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+            String value    =   dataSnapshot.getValue().toString();
+            String key    =   dataSnapshot.getKey();
+
+            int index   =   mKeys.indexOf(key);
+            mUsers.set(index,   value);
+        }
+
+        @Override
+        public void onChildRemoved(DataSnapshot dataSnapshot) {
+
+        }
+
+        @Override
+        public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+
+        }
+
+        @Override
+        public void onCancelled(DatabaseError databaseError) {
+
+        }
+    };
+
+
+    /*
+     *  captures the values of all children with their keys on start and when a value is changed
+     *  it captures the entire list both times
+     *  ex: {01=yunis, 02=george, 03=emma, -LJG-Fey5Ug_ZB-tUgNZ={Email=yunis.rajab@gmail.com, Password=123456}}
+     */
+    private ValueEventListener valueListener   =   new ValueEventListener() {
+        @Override
+        public void onDataChange(DataSnapshot dataSnapshot) {
+            String  value    =   dataSnapshot.getValue().toString();
+
+        }
+
+        @Override
+        public void onCancelled(DatabaseError databaseError) {
+
+        }
+    };
+
+    private void createUser (String email,  String  password)  {
+
+        mAuth.createUserWithEmailAndPassword(email, password)
+                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<AuthResult> task) {
+                        if (task.isSuccessful()) {
+                            // Sign in success, update UI with the signed-in user's information
+                            Log.d(TAG, "createUserWithEmail:success");
+                            FirebaseUser user = mAuth.getCurrentUser();
+                            Log.e(TAG,"Success!");
+                        } else {
+                            // If sign in fails, display a message to the user.
+                            Log.e(TAG,"Failure!");
+                        }
+
+                        // ...
+                    }
+                });
+    }
+
+    private boolean userExists  ()  {
+//        TODO check FTP server for user and return true if it exists
+        return true;
+    }
+
+    private void initLogin  ()  {
+        setContentView(R.layout.login);
+        Log.i(TAG,"Login layout");
+
+        loginButton =   findViewById(R.id.loginButton);
+        emailText   =   findViewById(R.id.emailText);
+        passText    =   findViewById(R.id.passText);
+
+        loginButton.setOnClickListener(loginListener);
+        emailText.addTextChangedListener(textWatcher);
+        passText.addTextChangedListener(textWatcher);
+
+        useLocalData.setUserLoggedIn(false);
+        emailText.setText("");
+        passText.setText("");
+        loginButton.setEnabled(false);
+    }
+
+    private void initMain   ()  {
+
     }
 
     private TextWatcher textWatcher = new TextWatcher() {
@@ -117,6 +313,10 @@ public class MainActivity extends AppCompatActivity{
         public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
             String  name    =   nameText.getText().toString().trim();
             String  url =   urlText.getText().toString().trim();
+            String  email   =   emailText.getText().toString().trim();
+            String  password    =   passText.getText().toString().trim();
+
+            loginButton.setEnabled(email.contains("@")  &&  password.length()>5);
             addButton.setEnabled(!name.isEmpty() && !url.isEmpty());
         }
         @Override
@@ -157,7 +357,7 @@ public class MainActivity extends AppCompatActivity{
         }
     };
 
-    private final View.OnClickListener childListener = new View.OnClickListener() {
+    private final View.OnClickListener childSwitch = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
 
@@ -166,17 +366,6 @@ public class MainActivity extends AppCompatActivity{
             Log.i(TAG,"Child layout");
             finish();
 
-        }
-    };
-
-    private final View.OnClickListener  logoutListener  =   new View.OnClickListener() {
-        @Override
-        public void onClick(View view) {
-            useLocalData.setUserLoggedIn(false);
-            Intent intent = new Intent(getApplicationContext() , LoginActivity.class);
-            getApplicationContext().startActivity(intent);
-            Log.i(TAG,"Login layout");
-            finish();
         }
     };
 
@@ -211,8 +400,10 @@ public class MainActivity extends AppCompatActivity{
         t = new Thread(new Runnable() {
             @Override
             public void run() {
-                ftpClient.ftpConnect("192.168.0.17", "Yunis Rajab", "qwerty27", 21);
+                ftpClient.ftpConnect("192.168.0.16", "Yunis Rajab", "qwerty27", 21);
+                Log.e(TAG,"Connecting");
                 ftpClient.ftpDownload("/"+USER_DIRECTORY+"/"+FILENAME, SOURCEFILE_PATH+FILENAME);
+                Log.e(TAG,"Downloading");
                 ftpClient.ftpDisconnect();
             }
         });
