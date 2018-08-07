@@ -27,6 +27,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.VideoView;
 
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -55,6 +58,7 @@ public class MainActivity extends AppCompatActivity{
     MediaController vidControl;
     private FTPActivity ftpClient = null;
     UserLocalData   useLocalData;
+//    DatabaseReference   mDatabaseReference;
 
 
     @Override
@@ -101,8 +105,9 @@ public class MainActivity extends AppCompatActivity{
             Log.i(TAG,"Login layout");
             finish();
         }
+//        mDatabaseReference  = FirebaseDatabase.getInstance().getReference();
 
-        retrieveFile();
+//        retrieveFile();
     }
 
     private TextWatcher textWatcher = new TextWatcher() {

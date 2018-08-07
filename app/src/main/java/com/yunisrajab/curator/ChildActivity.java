@@ -10,7 +10,12 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
+import android.widget.TextView;
 import android.widget.Toast;
+
+import com.firebase.ui.database.FirebaseListAdapter;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import org.apache.commons.net.ftp.FTPClient;
 
@@ -29,6 +34,7 @@ public class ChildActivity  extends Activity {
     String TAG = "Curator child";
     String url;
     String  USER_DIRECTORY;
+    DatabaseReference   mDatabaseReference;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,47 +51,29 @@ public class ChildActivity  extends Activity {
 
         mArrayList = new ArrayList<>();
 
-        retrieveFile();
-//        dummy();
+        mDatabaseReference  = FirebaseDatabase.getInstance().getReference().child("Test");
+
+        FirebaseListAdapter<String> firebaseListAdapter =   new FirebaseListAdapter<String>(
+                this,
+                String.class,
+                android.R.layout.simple_list_item_1,
+                mDatabaseReference
+        ) {
+            @Override
+            protected void populateView(View v, String model, int position) {
+
+                TextView    textView    =   v.findViewById(android.R.id.text1);
+                textView.setText(model);
+            }
+        };
+
+        mListView.setAdapter(firebaseListAdapter);
+
+//        retrieveFile();
 
 //        TODO mListView click
 
     }
-//    public void dummy   ()  {
-//        Thread t;
-//        t = new Thread(new Runnable() {
-//            @Override
-//            public void run() {
-//                try {
-////                    URL url = new URL ("ftp://Yunis Rajab:qwerty27@192.168.0.17/MediaList.txt");
-////                    URLConnection urlc = url.openConnection();
-////                    InputStream is = urlc.getInputStream();
-////                    Log.d(TAG,"input stream: "+is);
-//
-//                    FTPClient ftp = new FTPClient();
-//                    InputStream in = ftp.retrieveFileStream("ftp://Yunis Rajab:qwerty27@192.168.0.17/MediaList.txt");
-//                    InputStreamReader isr = new InputStreamReader(in);
-//                    BufferedReader br = new BufferedReader(isr);
-//
-//
-//                    String fileContent= br.readLine();
-//
-//                    System.out.println(fileContent);
-//
-//                    System.out.println(fileContent);
-//                }   catch (Exception    e)  {
-//                    Log.e(TAG,"Exception: "+e);
-//                }
-//            }
-//        });
-//        try {
-//            t.start();
-//            t.join();
-//        }   catch (Exception    e)  {
-//            Log.e(TAG,"Exception: "+e);
-//        }
-//
-//    }
 
     private final AdapterView.OnItemClickListener itemListener = new AdapterView.OnItemClickListener() {
         @Override
