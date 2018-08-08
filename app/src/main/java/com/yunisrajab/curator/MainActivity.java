@@ -31,6 +31,9 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
+import com.google.firebase.auth.FirebaseAuthInvalidUserException;
+import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -68,7 +71,7 @@ public class MainActivity extends AppCompatActivity{
     private FTPActivity ftpClient = null;
     UserLocalData   useLocalData;
 //    DatabaseReference   mDatabaseReference;
-Button  loginButton;
+    Button  loginButton,    registerButton;
     TextView    emailText, passText;
     UserLocalData userLocalData;
     DatabaseReference   mDatabaseReference;
@@ -108,6 +111,7 @@ Button  loginButton;
         logoutButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                mAuth.signOut();
                 initLogin();
             }
         });
@@ -159,34 +163,33 @@ Button  loginButton;
             String  email   =   emailText.getText().toString().trim();
             String  password    =   passText.getText().toString().trim();
 
-            if (!userExists())    {
-//                TODO get user password from server
-//                if (!password==password on FTP) {
-//                    passText.setText("");
-//                    Toast.makeText(getApplicationContext(), "Incorrect password",   Toast.LENGTH_LONG);
-//                }
+            User    user    =   new User(email, password);
+            userLocalData.setUserLoggedIn(true);
+            userLocalData.storeUserData(user);
 
-            }   else {
-                User    user    =   new User(email, password);
-                userLocalData.setUserLoggedIn(true);
-                userLocalData.storeUserData(user);
-
-                createUser(email,password);
-
-                mAuth.signInWithEmailAndPassword(email, password).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
-                    @Override
-                    public void onComplete(@NonNull Task<AuthResult> task) {
-                        if (!task.isSuccessful())    {
-                            Toast.makeText(getApplicationContext(), "Sign in error",    Toast.LENGTH_LONG).show();
+            mAuth.signInWithEmailAndPassword(email, password).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+                @Override
+                public void onComplete(@NonNull Task<AuthResult> task) {
+                    if (!task.isSuccessful())    {
+                        String error = task.getException().getMessage();
+                        if (task.getException() instanceof FirebaseAuthInvalidCredentialsException) {
+                            Log.e(TAG,"Wrong password "+error);
+                            Toast.makeText(getApplicationContext(), "The password is incorrect",    Toast.LENGTH_LONG).show();
+                        }   else   if (task.getException() instanceof FirebaseAuthInvalidUserException)    {
+                            Log.e(TAG,"Wrong email "+error);
+                            Toast.makeText(getApplicationContext(), "The email doesn't exist. Click register to sign up",    Toast.LENGTH_LONG).show();
                         }   else    {
-                            Intent intent = new Intent(getApplicationContext() , MainActivity.class);
-                            getApplicationContext().startActivity(intent);
-                            Log.i("Curator","Main layout");
-                            finish();
+                            Log.e(TAG,error);
+                            Toast.makeText(getApplicationContext(), error,    Toast.LENGTH_LONG).show();
                         }
+                    }   else    {
+                        Intent intent = new Intent(getApplicationContext() , MainActivity.class);
+                        getApplicationContext().startActivity(intent);
+                        Log.i("Curator","Main layout");
+                        finish();
                     }
-                });
-
+                }
+            });
 //                HashMap<String,String> dataMap  =   new HashMap<>();
 //                dataMap.put("Email",email);
 //                dataMap.put("Password",password);
@@ -200,7 +203,6 @@ Button  loginButton;
 //                        }
 //                    }
 //                });
-            }
         }
     };
 
@@ -271,7 +273,10 @@ Button  loginButton;
                             Log.e(TAG,"Success!");
                         } else {
                             // If sign in fails, display a message to the user.
-                            Log.e(TAG,"Failure!");
+                            Toast.makeText(getApplicationContext(),
+                                    "Failed to create account "+task.getException().getMessage(),
+                                    Toast.LENGTH_LONG).show();
+                            Log.e(TAG,"Failed to create account "+task.getException().getMessage());
                         }
 
                         // ...
@@ -288,10 +293,17 @@ Button  loginButton;
         setContentView(R.layout.login);
         Log.i(TAG,"Login layout");
 
+        registerButton  =   findViewById(R.id.registerButton);
         loginButton =   findViewById(R.id.loginButton);
         emailText   =   findViewById(R.id.emailText);
         passText    =   findViewById(R.id.passText);
 
+        registerButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                createUser(emailText.getText().toString().trim(),   passText.getText().toString().trim());
+            }
+        });
         loginButton.setOnClickListener(loginListener);
         emailText.addTextChangedListener(textWatcher);
         passText.addTextChangedListener(textWatcher);
@@ -300,10 +312,6 @@ Button  loginButton;
         emailText.setText("");
         passText.setText("");
         loginButton.setEnabled(false);
-    }
-
-    private void initMain   ()  {
-
     }
 
     private TextWatcher textWatcher = new TextWatcher() {
