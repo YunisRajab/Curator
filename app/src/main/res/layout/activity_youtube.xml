@@ -18,7 +18,7 @@
         android:background="#444"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:layout_alignBottom="@+id/youtube_view"
+        android:layout_below="@id/youtube_view"
         android:visibility="gone"
         android:weightSum="10">
 

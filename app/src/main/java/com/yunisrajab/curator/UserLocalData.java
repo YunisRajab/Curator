@@ -16,6 +16,7 @@ public class UserLocalData {
         SharedPreferences.Editor    spEditor    =   localUserDatabase.edit();
         spEditor.putString("email", user.email);
         spEditor.putString("password", user.password);
+        spEditor.putString("uid", user.uid);
         spEditor.apply();
 
     }
@@ -23,8 +24,9 @@ public class UserLocalData {
     public User getLoggedUser   ()  {
         String  email   =   localUserDatabase.getString("email","");
         String  password   =   localUserDatabase.getString("password","");
+        String  uid   =   localUserDatabase.getString("uid","");
 
-        User    storedUser  =   new User(email,password);
+        User    storedUser  =   new User(email,password,uid);
 
         return storedUser;
     }

@@ -42,6 +42,8 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import org.json.JSONObject;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -50,16 +52,18 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 
 
 public class MainActivity extends AppCompatActivity{
 
 
-    Button addButton, submitButton, childButton, logoutButton;
-    EditText nameText, urlText;
+    Button addButton, childButton, logoutButton, listButton;
+    EditText ratingText, urlText;
     String TAG = "Curator";
     String FILENAME = "MediaList.txt";
     String PACKAGE_NAME;
@@ -68,106 +72,31 @@ public class MainActivity extends AppCompatActivity{
     String USER_DIRECTORY;
     VideoView mVideoView;
     MediaController vidControl;
-    private FTPActivity ftpClient = null;
-    UserLocalData   useLocalData;
-//    DatabaseReference   mDatabaseReference;
     Button  loginButton,    registerButton;
     TextView    emailText, passText;
     UserLocalData userLocalData;
+    User    mUser;
     DatabaseReference   mDatabaseReference;
-    ArrayList<String>   mUsers  =   new ArrayList<>();
+    ArrayList<String>   mValues  =   new ArrayList<>();
     ArrayList<String>   mKeys  =   new ArrayList<>();
     FirebaseAuth mAuth;
     FirebaseAuth.AuthStateListener  mAuthListener;
+    String  mEmail, mPassword,  mUid;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        PACKAGE_NAME = getApplicationContext().getPackageName();
-        SOURCEFILE_PATH = Environment.getExternalStorageDirectory()+"/Android/data/"+PACKAGE_NAME+"/";
-
-        vidControl = new MediaController(this);
-        mVideoView = (VideoView)    findViewById(R.id.myVideo);
-        addButton = (Button)    findViewById(R.id.addButton);
-        submitButton = (Button)    findViewById(R.id.submitButton);
-        childButton = (Button) findViewById(R.id.childButton);
-        logoutButton = (Button) findViewById(R.id.logoutButton);
-
-        nameText = (EditText)    findViewById(R.id.nameText);
-        urlText = (EditText)    findViewById(R.id.urlText);
-
-        nameText.addTextChangedListener(textWatcher);
-        urlText.addTextChangedListener(textWatcher);
-
-        addButton.setEnabled(false);
-        submitButton.setEnabled(false);
-
-        childButton.setOnClickListener(childSwitch);
-        addButton.setOnClickListener(addListener);
-        submitButton.setOnClickListener(addListener);
-        logoutButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                mAuth.signOut();
-                initLogin();
-            }
-        });
-
-        ftpClient = new FTPActivity();
-
-        useLocalData   =   new UserLocalData(this);
-
-//        TODO share link into app instead of manual cop+paste
-//        TODO add playlists instead of individual videos
-//        TODO only take urls and extract titles(and thumbnails)
-        if (!isReadStorageAllowed())    requestStoragePermission();
-
-        if (!useLocalData.getUserLoggedIn())    {
-            initLogin();
-        }
-//        mDatabaseReference  = FirebaseDatabase.getInstance().getReference();
-
-//        retrieveFile();
-
-        userLocalData   =   new UserLocalData(this);
-
-        mDatabaseReference  = FirebaseDatabase.getInstance().getReference();
-        mDatabaseReference.addValueEventListener(valueListener);
-        mDatabaseReference.addChildEventListener(childListener);
-        mAuth   =   FirebaseAuth.getInstance();
-        mAuthListener   =   new FirebaseAuth.AuthStateListener() {
-            @Override
-            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
-
-                if (firebaseAuth.getCurrentUser()   !=  null)   {
-
-//                    intent User Account
-                }
-            }
-        };
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-        mAuth.addAuthStateListener(mAuthListener);
+        initMain();
     }
 
     private View.OnClickListener loginListener  =   new View.OnClickListener() {
         @Override
         public void onClick(View view) {
-            String  email   =   emailText.getText().toString().trim();
-            String  password    =   passText.getText().toString().trim();
+            mEmail   =   emailText.getText().toString().trim();
+            mPassword    =   passText.getText().toString().trim();
 
-            User    user    =   new User(email, password);
-            userLocalData.setUserLoggedIn(true);
-            userLocalData.storeUserData(user);
-
-            mAuth.signInWithEmailAndPassword(email, password).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+            mAuth.signInWithEmailAndPassword(mEmail, mPassword).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
                 @Override
                 public void onComplete(@NonNull Task<AuthResult> task) {
                     if (!task.isSuccessful())    {
@@ -183,26 +112,15 @@ public class MainActivity extends AppCompatActivity{
                             Toast.makeText(getApplicationContext(), error,    Toast.LENGTH_LONG).show();
                         }
                     }   else    {
-                        Intent intent = new Intent(getApplicationContext() , MainActivity.class);
-                        getApplicationContext().startActivity(intent);
-                        Log.i("Curator","Main layout");
-                        finish();
+                        mUid =   mAuth.getCurrentUser().getUid();
+                        User    user    =   new User(mEmail, mPassword,   mUid);
+                        userLocalData.setUserLoggedIn(true);
+                        userLocalData.storeUserData(user);
+
+                        initMain();
                     }
                 }
             });
-//                HashMap<String,String> dataMap  =   new HashMap<>();
-//                dataMap.put("Email",email);
-//                dataMap.put("Password",password);
-//                mDatabaseReference.push().setValue(dataMap).addOnCompleteListener(new OnCompleteListener<Void>() {
-//                    @Override
-//                    public void onComplete(@NonNull Task<Void> task) {
-//                        if (task.isSuccessful())    {
-//                            Toast.makeText(getApplicationContext(),"Success",Toast.LENGTH_LONG).show();
-//                        }   else {
-//                            Toast.makeText(getApplicationContext(),"Error!",Toast.LENGTH_LONG).show();
-//                        }
-//                    }
-//                });
         }
     };
 
@@ -212,7 +130,7 @@ public class MainActivity extends AppCompatActivity{
             String value    =   dataSnapshot.getValue().toString();
             String key    =   dataSnapshot.getKey();
 
-            mUsers.add(value);
+            mValues.add(value);
             mKeys.add(key);
         }
 
@@ -222,7 +140,8 @@ public class MainActivity extends AppCompatActivity{
             String key    =   dataSnapshot.getKey();
 
             int index   =   mKeys.indexOf(key);
-            mUsers.set(index,   value);
+            mValues.set(index,   value);
+            setTitle(mValues.get(index));
         }
 
         @Override
@@ -250,7 +169,10 @@ public class MainActivity extends AppCompatActivity{
     private ValueEventListener valueListener   =   new ValueEventListener() {
         @Override
         public void onDataChange(DataSnapshot dataSnapshot) {
-            String  value    =   dataSnapshot.getValue().toString();
+            if (dataSnapshot.getValue()    !=  null)   {
+                String  value    =   dataSnapshot.getValue().toString();
+            }
+
 
         }
 
@@ -284,11 +206,6 @@ public class MainActivity extends AppCompatActivity{
                 });
     }
 
-    private boolean userExists  ()  {
-//        TODO check FTP server for user and return true if it exists
-        return true;
-    }
-
     private void initLogin  ()  {
         setContentView(R.layout.login);
         Log.i(TAG,"Login layout");
@@ -308,10 +225,121 @@ public class MainActivity extends AppCompatActivity{
         emailText.addTextChangedListener(textWatcher);
         passText.addTextChangedListener(textWatcher);
 
-        useLocalData.setUserLoggedIn(false);
+        userLocalData.setUserLoggedIn(false);
         emailText.setText("");
         passText.setText("");
         loginButton.setEnabled(false);
+        registerButton.setEnabled(false);
+    }
+
+    private void initMain   ()  {
+        setContentView(R.layout.activity_main);
+        Log.i("Curator","Main layout");
+
+        mVideoView = (VideoView)    findViewById(R.id.myVideo);
+        addButton = (Button)    findViewById(R.id.addButton);
+        childButton = (Button) findViewById(R.id.childButton);
+        logoutButton = (Button) findViewById(R.id.logoutButton);
+        listButton  =   (Button)    findViewById(R.id.listButton);
+
+        ratingText = (EditText)    findViewById(R.id.ratingText);
+        urlText = (EditText)    findViewById(R.id.urlText);
+
+        ratingText.addTextChangedListener(textWatcher);
+        urlText.addTextChangedListener(textWatcher);
+
+        addButton.setEnabled(false);
+
+        childButton.setOnClickListener(childSwitch);
+        addButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                final String  url =   urlText.getText().toString().trim();
+                int rating    =   0;
+                if (ratingText.getText().toString().trim()!=null)   {
+                    rating    =   Integer.parseInt(ratingText.getText().toString().trim());
+                }
+                upload(url,rating);
+                ratingText.getText().clear();
+                urlText.getText().clear();
+                addButton.setEnabled(false);
+            }
+        });
+        logoutButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mAuth.signOut();
+                initLogin();
+            }
+        });
+        listButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intentMain = new Intent(MainActivity.this , ListActivity.class);
+                MainActivity.this.startActivity(intentMain);
+                Log.i(TAG,"List layout");
+                finish();
+            }
+        });
+
+        userLocalData   =   new UserLocalData(this);
+        mUser   =   userLocalData.getLoggedUser();
+
+//        TODO share link into app instead of manual cop+paste
+
+        if (!isReadStorageAllowed())    requestStoragePermission();
+
+        if (!userLocalData.getUserLoggedIn())    {
+            initLogin();
+        }
+
+        mDatabaseReference  = FirebaseDatabase.getInstance().getReference().child("Users").child(mUser.uid);
+        mDatabaseReference.addValueEventListener(valueListener);
+        mDatabaseReference.child("URLs").addChildEventListener(childListener);
+        mAuth   =   FirebaseAuth.getInstance();
+
+        final DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+        rootRef.child("Users").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                if (!dataSnapshot.hasChild(mUser.uid)) {
+                    Toast.makeText(getApplicationContext(),"Welcome!",Toast.LENGTH_LONG).show();
+                    rootRef.child("Main_List").addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                            mDatabaseReference.setValue(dataSnapshot.getValue());
+                        }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                        }
+                    });
+                }   else {
+                    Toast.makeText(getApplicationContext(),"Welcome back!",Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+
+        // Get intent, action and MIME type
+        Intent intent = getIntent();
+        String action = intent.getAction();
+        String type = intent.getType();
+
+        if (Intent.ACTION_SEND.equals(action) && type != null) {
+            if (type.startsWith("text/")) {
+                String sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
+                if (sharedText != null) {
+                    upload(sharedText,0);
+                    finish();
+                }
+            }
+        }
     }
 
     private TextWatcher textWatcher = new TextWatcher() {
@@ -319,13 +347,21 @@ public class MainActivity extends AppCompatActivity{
         public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
         @Override
         public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-            String  name    =   nameText.getText().toString().trim();
-            String  url =   urlText.getText().toString().trim();
-            String  email   =   emailText.getText().toString().trim();
-            String  password    =   passText.getText().toString().trim();
+            int rating=0;
+            try{
+                rating    =   Integer.parseInt(ratingText.getText().toString().trim());
 
-            loginButton.setEnabled(email.contains("@")  &&  password.length()>5);
-            addButton.setEnabled(!name.isEmpty() && !url.isEmpty());
+            }catch(NumberFormatException e){
+            }
+
+            String  url =   urlText.getText().toString().trim();
+            addButton.setEnabled(rating!=0 && !url.isEmpty());
+            if (!userLocalData.getUserLoggedIn())   {
+                String  email   =   emailText.getText().toString().trim();
+                String  password    =   passText.getText().toString().trim();
+                loginButton.setEnabled(email.contains("@")  &&  password.length()>5);
+                registerButton.setEnabled(email.contains("@")  &&  password.length()>5);
+            }
         }
         @Override
         public void afterTextChanged(Editable editable) {}
@@ -335,33 +371,7 @@ public class MainActivity extends AppCompatActivity{
 
         @Override
         public void onClick(View view) {
-            if  (view==addButton) {
 
-                if (mArray==null)   {
-                    mArray = new ArrayList<>();
-                }
-                mArray.add(nameText.getText().toString()+"\n");
-                mArray.add(urlText.getText().toString().trim()+"\n");
-                nameText.setText("");
-                urlText.setText("");
-                addButton.setEnabled(false);
-                submitButton.setEnabled(true);
-
-            }   else    if (view==submitButton) {
-                createFile();
-                new Thread(new Runnable() {
-                    public void run() {
-                        // host – your FTP address
-                        // username & password – for your secured login
-                        // 21 default gateway for FTP
-                        ftpClient.ftpConnect("192.168.0.17", "Yunis Rajab", "qwerty27", 21);
-                        ftpClient.ftpUpload(SOURCEFILE_PATH+FILENAME, FILENAME,
-                                "", getApplicationContext());
-                        ftpClient.ftpDisconnect();
-                    }
-                }).start();
-                submitButton.setEnabled(false);
-            }
         }
     };
 
@@ -369,60 +379,100 @@ public class MainActivity extends AppCompatActivity{
         @Override
         public void onClick(View view) {
 
-            Intent intentMain = new Intent(getApplicationContext() , ChildActivity.class);
-            getApplicationContext().startActivity(intentMain);
+            Intent intentMain = new Intent(MainActivity.this , ChildActivity.class);
+            MainActivity.this.startActivity(intentMain);
             Log.i(TAG,"Child layout");
             finish();
 
         }
     };
 
-    public void createFile() {
-//            TODO  don't overwrite if file exists (only append)
-        try {
-            File root = new File(SOURCEFILE_PATH);
-            if (!root.exists()) {
-                boolean success = root.mkdir();
-                Log.d(TAG, "Create Directory: "+success);
-            }
-            File txtFile = new File(root, FILENAME);
-            FileWriter writer = new FileWriter(txtFile);
-            if (mArray!=null)   {
-                for (int i=0;   i<mArray.size();  i++)    {
-                    writer.append(mArray.get(i));
-                }
-            }
-            writer.flush();
-            writer.close();
-            mArray = null;
-            Toast.makeText(this, "Saved : " + txtFile.getAbsolutePath(),
-                    Toast.LENGTH_LONG).show();
-        } catch (IOException e) {
-            Log.e(TAG,"Exception: "+e);
-            e.printStackTrace();
+    public void upload    (String   url,    int rate)  {
+        final String   youtubeUrl   =   url;
+        final String  videoID;
+        final int   rating  =   rate;
+        if (url.contains("=")) {
+            videoID = url.substring(url.lastIndexOf("=") + 1);
+        }   else {
+            videoID = url.substring(url.lastIndexOf("/") + 1);
         }
-    }
-
-    private void retrieveFile()  {
-        Thread t;
-        t = new Thread(new Runnable() {
+        new Thread(new Runnable() {
             @Override
             public void run() {
-                ftpClient.ftpConnect("192.168.0.16", "Yunis Rajab", "qwerty27", 21);
-                Log.e(TAG,"Connecting");
-                ftpClient.ftpDownload("/"+USER_DIRECTORY+"/"+FILENAME, SOURCEFILE_PATH+FILENAME);
-                Log.e(TAG,"Downloading");
-                ftpClient.ftpDisconnect();
+                try{
+                    final   URL embededURL = new URL("http://www.youtube.com/oembed?url=" +
+                            youtubeUrl + "&format=json");
+                    final String  title   =
+                            new JSONObject(org.apache.commons.io.IOUtils.toString(embededURL))
+                                    .getString("title");
+
+                    final Video video =   new Video(title,youtubeUrl,rating);
+
+                    mDatabaseReference.child(videoID).setValue(video).addOnCompleteListener(new OnCompleteListener<Void>() {
+                        @Override
+                        public void onComplete(@NonNull Task<Void> task) {
+                            if (task.isSuccessful())    {
+                                Toast.makeText(getApplicationContext(),"Success!",Toast.LENGTH_LONG).show();
+                            }   else {
+                                Toast.makeText(getApplicationContext(),"Error!",Toast.LENGTH_LONG).show();
+                            }
+                        }
+                    });
+                }
+                catch(Exception e)
+                {
+                    Log.e(TAG,"upload "+e);
+                }
             }
-        });
-        try {
-            t.start();
-            t.join();
-        }   catch (Exception e) {
-            e.printStackTrace();
-        }
-//        readFile();
+        }).start();
     }
+
+//    public void createFile() {
+////            TODO  don't overwrite if file exists (only append)
+//        try {
+//            File root = new File(SOURCEFILE_PATH);
+//            if (!root.exists()) {
+//                boolean success = root.mkdir();
+//                Log.d(TAG, "Create Directory: "+success);
+//            }
+//            File txtFile = new File(root, FILENAME);
+//            FileWriter writer = new FileWriter(txtFile);
+//            if (mArray!=null)   {
+//                for (int i=0;   i<mArray.size();  i++)    {
+//                    writer.append(mArray.get(i));
+//                }
+//            }
+//            writer.flush();
+//            writer.close();
+//            mArray = null;
+//            Toast.makeText(this, "Saved : " + txtFile.getAbsolutePath(),
+//                    Toast.LENGTH_LONG).show();
+//        } catch (IOException e) {
+//            Log.e(TAG,"Exception: "+e);
+//            e.printStackTrace();
+//        }
+//    }
+//
+//    private void retrieveFile()  {
+//        Thread t;
+//        t = new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                ftpClient.ftpConnect("192.168.0.16", "Yunis Rajab", "qwerty27", 21);
+//                Log.e(TAG,"Connecting");
+//                ftpClient.ftpDownload("/"+USER_DIRECTORY+"/"+FILENAME, SOURCEFILE_PATH+FILENAME);
+//                Log.e(TAG,"Downloading");
+//                ftpClient.ftpDisconnect();
+//            }
+//        });
+//        try {
+//            t.start();
+//            t.join();
+//        }   catch (Exception e) {
+//            e.printStackTrace();
+//        }
+////        readFile();
+//    }
 
     //Requesting permission
     private void requestStoragePermission(){

@@ -105,6 +105,7 @@ public class LoginActivity  extends Activity {
         public void onClick(View view) {
             String  email   =   emailText.getText().toString().trim();
             String  password    =   passText.getText().toString().trim();
+            String  uid =   mAuth.getCurrentUser().getUid();
 
             if (!userExists())    {
 //                TODO get user password from server
@@ -114,7 +115,7 @@ public class LoginActivity  extends Activity {
 //                }
 
             }   else {
-                User    user    =   new User(email, password);
+                User    user    =   new User(email, password,   uid);
                 userLocalData.setUserLoggedIn(true);
                 userLocalData.storeUserData(user);
 

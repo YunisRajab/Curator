@@ -26,7 +26,6 @@ public class YouTubeActivity extends YouTubeBaseActivity implements YouTubePlaye
     private YouTubePlayer mPlayer;
     private View mPlayButtonLayout;
     private TextView mPlayTimeTextView;
-    private CountDownTimer  mCountDownTimer;
 
     private Handler mHandler = null;
     private SeekBar mSeekBar;
@@ -64,18 +63,9 @@ public class YouTubeActivity extends YouTubeBaseActivity implements YouTubePlaye
         mPlayTimeTextView = (TextView) findViewById(R.id.play_time);
         mSeekBar = (SeekBar) findViewById(R.id.video_seekbar);
         mSeekBar.setOnSeekBarChangeListener(mVideoSeekBarChangeListener);
+        mPlayButtonLayout.setVisibility(View.VISIBLE);
 
         mHandler = new Handler();
-        mCountDownTimer = new CountDownTimer(1000,1000) {
-            @Override
-            public void onTick(long l) {
-                Log.i(TAG,"Timer"+l);
-            }
-            @Override
-            public void onFinish() {
-                mPlayButtonLayout.setVisibility(View.INVISIBLE);
-            }
-        };
 
 //        TODO handle mobile links
         url = getIntent().getStringExtra("url");
@@ -83,10 +73,7 @@ public class YouTubeActivity extends YouTubeBaseActivity implements YouTubePlaye
             url = url.substring(url.lastIndexOf("=") + 1);
         }   else {
             url = url.substring(url.lastIndexOf("/") + 1);
-            Log.e(TAG,url);
         }
-        Log.e(TAG,url);
-        mPlayButtonLayout.setVisibility(View.INVISIBLE);
 
         //TODO add seek controls (10 sec increment) and sync with seekbar
 //        Button seekToButton = (Button) findViewById(R.id.seekButton);
@@ -110,7 +97,6 @@ public class YouTubeActivity extends YouTubeBaseActivity implements YouTubePlaye
         }
 
         player.setPlayerStyle(YouTubePlayer.PlayerStyle.MINIMAL);
-        mPlayButtonLayout.setVisibility(View.VISIBLE);
 
         // Add listeners to YouTubePlayer instance
         player.setPlayerStateChangeListener(playerStateChangeListener);
@@ -150,7 +136,6 @@ public class YouTubeActivity extends YouTubeBaseActivity implements YouTubePlaye
         public void onPlaying() {
             // Called when playback starts, either due to user action or call to play().
             showMessage("Playing");
-            mCountDownTimer.start();
             mHandler.postDelayed(runnable, 100);
             displayCurrentTime();
         }
@@ -160,7 +145,6 @@ public class YouTubeActivity extends YouTubeBaseActivity implements YouTubePlaye
             // Called when playback is paused, either due to user action or call to pause().
             showMessage("Paused");
             mPlayer.setFullscreen(false);
-            mPlayButtonLayout.setVisibility(View.VISIBLE);
             mHandler.removeCallbacks(runnable);
         }
 
@@ -168,7 +152,6 @@ public class YouTubeActivity extends YouTubeBaseActivity implements YouTubePlaye
         public void onStopped() {
             // Called when playback stops for a reason other than being paused.
             showMessage("Stopped");
-            mPlayButtonLayout.setVisibility(View.VISIBLE);
             mHandler.removeCallbacks(runnable);
         }
 

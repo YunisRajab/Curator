@@ -10,38 +10,28 @@
         android:id="@+id/addButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignStart="@+id/nameText"
-        android:layout_centerVertical="true"
+        android:layout_centerInParent="true"
         android:text="Add" />
 
     <EditText
-        android:id="@+id/nameText"
+        android:id="@+id/ratingText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="164dp"
         android:ems="10"
-        android:hint="enter name"
-        android:inputType="textPersonName" />
+        android:hint="enter rating"
+        android:inputType="number" />
 
     <EditText
         android:id="@+id/urlText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/nameText"
+        android:layout_below="@+id/ratingText"
         android:layout_centerHorizontal="true"
         android:ems="10"
-        android:hint="enter url"
-        android:inputType="textPersonName" />
-
-    <Button
-        android:id="@+id/submitButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignEnd="@+id/nameText"
-        android:layout_centerVertical="true"
-        android:text="Submit" />
+        android:hint="enter url" />
 
     <Button
         android:id="@+id/childButton"
@@ -50,7 +40,7 @@
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="86dp"
-        android:text="Go to child" />
+        android:text="Child Mode" />
 
     <Button
         android:id="@+id/logoutButton"
@@ -58,7 +48,15 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginBottom="150dp"
+        android:layout_marginBottom="91dp"
         android:text="Logout" />
+
+    <Button
+        android:id="@+id/listButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/addButton"
+        android:layout_centerHorizontal="true"
+        android:text="View List" />
 
 </RelativeLayout>
