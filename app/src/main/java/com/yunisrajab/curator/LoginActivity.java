@@ -1,9 +1,9 @@
 package com.yunisrajab.curator;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -16,34 +16,28 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
+import com.google.firebase.auth.FirebaseAuthInvalidUserException;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.ChildEventListener;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+public class LoginActivity  extends AppCompatActivity {
 
-public class LoginActivity  extends Activity {
-
-    Button  loginButton;
+    Button  loginButton,    registerButton;
     TextView    emailText, passText;
     UserLocalData userLocalData;
     DatabaseReference   mDatabaseReference;
     String  TAG =   "Login";
-    ArrayList<String>   mUsers  =   new ArrayList<>();
-    ArrayList<String>   mKeys  =   new ArrayList<>();
     FirebaseAuth    mAuth;
-    FirebaseAuth.AuthStateListener  mAuthListener;
+    String  mEmail, mPassword,  mUid;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.login);
 
+        registerButton  =   findViewById(R.id.registerButton);
         loginButton =   findViewById(R.id.loginButton);
         emailText   =   findViewById(R.id.emailText);
         passText    =   findViewById(R.id.passText);
@@ -52,31 +46,24 @@ public class LoginActivity  extends Activity {
         emailText.addTextChangedListener(textWatcher);
         passText.addTextChangedListener(textWatcher);
 
+        userLocalData   =   new UserLocalData(this);
+        userLocalData.setUserLoggedIn(false);
+        emailText.setText("");
+        passText.setText("");
+        loginButton.setEnabled(false);
+        registerButton.setEnabled(false);
+
         loginButton.setEnabled(false);
 
-        userLocalData   =   new UserLocalData(this);
-
         mDatabaseReference  = FirebaseDatabase.getInstance().getReference();
-        mDatabaseReference.addValueEventListener(valueListener);
-        mDatabaseReference.addChildEventListener(childListener);
         mAuth   =   FirebaseAuth.getInstance();
-        mAuthListener   =   new FirebaseAuth.AuthStateListener() {
+
+        registerButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
-
-                if (firebaseAuth.getCurrentUser()   !=  null)   {
-
-//                    intent User Account
-                }
+            public void onClick(View view) {
+                createUser(emailText.getText().toString().trim(),   passText.getText().toString().trim());
             }
-        };
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-        mAuth.addAuthStateListener(mAuthListener);
+        });
     }
 
     private TextWatcher textWatcher =   new TextWatcher() {
@@ -87,10 +74,12 @@ public class LoginActivity  extends Activity {
 
         @Override
         public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-            String  email   =   emailText.getText().toString().trim();
-            String  password    =   passText.getText().toString().trim();
-
-            loginButton.setEnabled(email.contains("@")  &&  password.length()>5);
+            if (!userLocalData.getUserLoggedIn())   {
+                String  email   =   emailText.getText().toString().trim();
+                String  password    =   passText.getText().toString().trim();
+                loginButton.setEnabled(email.contains("@")  &&  password.length()>5);
+                registerButton.setEnabled(email.contains("@")  &&  password.length()>5);
+            }
 
         }
 
@@ -103,108 +92,40 @@ public class LoginActivity  extends Activity {
     private View.OnClickListener loginListener  =   new View.OnClickListener() {
         @Override
         public void onClick(View view) {
-            String  email   =   emailText.getText().toString().trim();
-            String  password    =   passText.getText().toString().trim();
-            String  uid =   mAuth.getCurrentUser().getUid();
+            mEmail   =   emailText.getText().toString().trim();
+            mPassword    =   passText.getText().toString().trim();
 
-            if (!userExists())    {
-//                TODO get user password from server
-//                if (!password==password on FTP) {
-//                    passText.setText("");
-//                    Toast.makeText(getApplicationContext(), "Incorrect password",   Toast.LENGTH_LONG);
-//                }
-
-            }   else {
-                User    user    =   new User(email, password,   uid);
-                userLocalData.setUserLoggedIn(true);
-                userLocalData.storeUserData(user);
-
-                createUser(email,password);
-
-                mAuth.signInWithEmailAndPassword(email, password).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
-                    @Override
-                    public void onComplete(@NonNull Task<AuthResult> task) {
-                        if (!task.isSuccessful())    {
-                            Toast.makeText(getApplicationContext(), "Sign in error",    Toast.LENGTH_LONG).show();
+            mAuth.signInWithEmailAndPassword(mEmail, mPassword).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+                @Override
+                public void onComplete(@NonNull Task<AuthResult> task) {
+                    if (!task.isSuccessful())    {
+                        String error = task.getException().getMessage();
+                        if (task.getException() instanceof FirebaseAuthInvalidCredentialsException) {
+                            Log.e(TAG,"Wrong password "+error);
+                            Toast.makeText(getApplicationContext(), "The password is incorrect",    Toast.LENGTH_LONG).show();
+                        }   else   if (task.getException() instanceof FirebaseAuthInvalidUserException)    {
+                            Log.e(TAG,"Wrong email "+error);
+                            Toast.makeText(getApplicationContext(), "The email doesn't exist. Click register to sign up",    Toast.LENGTH_LONG).show();
                         }   else    {
-                            Intent intent = new Intent(getApplicationContext() , MainActivity.class);
-                            getApplicationContext().startActivity(intent);
-                            Log.i("Curator","Main layout");
-                            finish();
+                            Log.e(TAG,error);
+                            Toast.makeText(getApplicationContext(), error,    Toast.LENGTH_LONG).show();
                         }
+                    }   else    {
+                        mUid =   mAuth.getCurrentUser().getUid();
+                        User    user    =   new User(mEmail, mPassword,   mUid);
+                        userLocalData.setUserLoggedIn(true);
+                        userLocalData.storeUserData(user);
+
+                        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                        LoginActivity.this.startActivity(intent);
+                        Log.i("Curator", "Main layout");
+                        finish();
                     }
-                });
-
-//                HashMap<String,String> dataMap  =   new HashMap<>();
-//                dataMap.put("Email",email);
-//                dataMap.put("Password",password);
-//                mDatabaseReference.push().setValue(dataMap).addOnCompleteListener(new OnCompleteListener<Void>() {
-//                    @Override
-//                    public void onComplete(@NonNull Task<Void> task) {
-//                        if (task.isSuccessful())    {
-//                            Toast.makeText(getApplicationContext(),"Success",Toast.LENGTH_LONG).show();
-//                        }   else {
-//                            Toast.makeText(getApplicationContext(),"Error!",Toast.LENGTH_LONG).show();
-//                        }
-//                    }
-//                });
-            }
+                }
+            });
         }
     };
 
-    private ChildEventListener  childListener   =   new ChildEventListener() {
-        @Override
-        public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-            String value    =   dataSnapshot.getValue().toString();
-            String key    =   dataSnapshot.getKey();
-
-            mUsers.add(value);
-            mKeys.add(key);
-        }
-
-        @Override
-        public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-            String value    =   dataSnapshot.getValue().toString();
-            String key    =   dataSnapshot.getKey();
-
-            int index   =   mKeys.indexOf(key);
-            mUsers.set(index,   value);
-        }
-
-        @Override
-        public void onChildRemoved(DataSnapshot dataSnapshot) {
-
-        }
-
-        @Override
-        public void onChildMoved(DataSnapshot dataSnapshot, String s) {
-
-        }
-
-        @Override
-        public void onCancelled(DatabaseError databaseError) {
-
-        }
-    };
-
-
-    /*
-     *  captures the values of all children with their keys on start and when a value is changed
-     *  it captures the entire list both times
-     *  ex: {01=yunis, 02=george, 03=emma, -LJG-Fey5Ug_ZB-tUgNZ={Email=yunis.rajab@gmail.com, Password=123456}}
-     */
-    private ValueEventListener  valueListener   =   new ValueEventListener() {
-        @Override
-        public void onDataChange(DataSnapshot dataSnapshot) {
-            String  value    =   dataSnapshot.getValue().toString();
-
-        }
-
-        @Override
-        public void onCancelled(DatabaseError databaseError) {
-
-        }
-    };
 
     private void createUser (String email,  String  password)  {
 
@@ -219,7 +140,10 @@ public class LoginActivity  extends Activity {
                             Log.e(TAG,"Success!");
                         } else {
                             // If sign in fails, display a message to the user.
-                            Log.e(TAG,"Failure!");
+                            Toast.makeText(getApplicationContext(),
+                                    "Failed to create account "+task.getException().getMessage(),
+                                    Toast.LENGTH_LONG).show();
+                            Log.e(TAG,"Failed to create account "+task.getException().getMessage());
                         }
 
                         // ...
@@ -227,8 +151,4 @@ public class LoginActivity  extends Activity {
                 });
     }
 
-    private boolean userExists  ()  {
-//        TODO check FTP server for user and return true if it exists
-        return true;
-    }
 }

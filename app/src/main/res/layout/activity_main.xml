@@ -1,62 +1,25 @@
-<RelativeLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.v4.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity" >
+    android:fitsSystemWindows="true"
+    tools:openDrawer="start">
 
+    <include
+        layout="@layout/content_main"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 
-    <Button
-        android:id="@+id/addButton"
+    <android.support.design.widget.NavigationView
+        android:id="@+id/nav_view"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:text="Add" />
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:fitsSystemWindows="true"
+        app:headerLayout="@layout/nav_header_main"
+        app:menu="@menu/activity_main_drawer" />
 
-    <EditText
-        android:id="@+id/ratingText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="164dp"
-        android:ems="10"
-        android:hint="enter rating"
-        android:inputType="number" />
-
-    <EditText
-        android:id="@+id/urlText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/ratingText"
-        android:layout_centerHorizontal="true"
-        android:ems="10"
-        android:hint="enter url" />
-
-    <Button
-        android:id="@+id/childButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="86dp"
-        android:text="Child Mode" />
-
-    <Button
-        android:id="@+id/logoutButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="91dp"
-        android:text="Logout" />
-
-    <Button
-        android:id="@+id/listButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/addButton"
-        android:layout_centerHorizontal="true"
-        android:text="View List" />
-
-</RelativeLayout>
+</android.support.v4.widget.DrawerLayout>

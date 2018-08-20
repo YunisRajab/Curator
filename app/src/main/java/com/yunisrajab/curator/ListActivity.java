@@ -1,41 +1,30 @@
 package com.yunisrajab.curator;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Environment;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
+import android.support.design.bottomnavigation.LabelVisibilityMode;
+import android.support.design.widget.BottomNavigationView;
+import android.support.design.widget.NavigationView;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
-import android.widget.SimpleAdapter;
 import android.widget.TextView;
-
+import android.widget.Toast;
 import com.firebase.ui.database.FirebaseListAdapter;
-import com.firebase.ui.database.FirebaseRecyclerAdapter;
-import com.google.firebase.database.ChildEventListener;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-public class ListActivity extends Activity {
+public class ListActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     ListView mListView;
     String TAG = "Curator list";
@@ -43,13 +32,14 @@ public class ListActivity extends Activity {
     DatabaseReference mDatabaseReference;
     User    mUser;
     UserLocalData   mUserLocalData;
+    boolean doubleBackPressedOnce   =   false;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_listview);
 
-        mListView   =   (ListView)  findViewById(R.id.mainList);
+        mListView   =   (ListView)  findViewById(R.id.favList);
         mUserLocalData  =   new UserLocalData(getApplicationContext());
         mUser   =   mUserLocalData.getLoggedUser();
         mDatabaseReference  = FirebaseDatabase.getInstance().getReference().child("Users").child(mUser.uid);
@@ -66,9 +56,86 @@ public class ListActivity extends Activity {
             }
         };
         mListView.setAdapter(adapter);
+        mListView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> arg0, View arg1,
+                                           int pos, long id) {
+                Video   video = (Video) mListView.getItemAtPosition(pos);
+                String  url =   video.getUrl();
+                String  videoID;
+                if (url.contains("=")) {
+                    videoID = url.substring(url.lastIndexOf("=") + 1);
+                }   else {
+                    videoID = url.substring(url.lastIndexOf("/") + 1);
+                }
+                return true;
+            }
+        });
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        toolbar.setTitle("Favourites");
+        setSupportActionBar(toolbar);
+
+        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        navigationView.setNavigationItemSelectedListener(this);
+
+        BottomNavigationView bottomNavigationView    =   findViewById(R.id.bottomNavigation);
+        bottomNavigationView.setLabelVisibilityMode(LabelVisibilityMode.LABEL_VISIBILITY_LABELED);
+        Menu   menu    =   bottomNavigationView.getMenu();
+        MenuItem    menuItem    =   menu.getItem(1);
+        menuItem.setChecked(true);
+        bottomNavigationView.setOnNavigationItemSelectedListener(mItemSelectedListener);
     }
 
+    private BottomNavigationView.OnNavigationItemSelectedListener   mItemSelectedListener   =   new BottomNavigationView.OnNavigationItemSelectedListener() {
+        @Override
+        public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+            Intent  intent;
+            switch (item.getItemId())   {
+                case R.id.bn_cloud:
+                    intent = new Intent(ListActivity.this , MainActivity.class);
+                    ListActivity.this.startActivity(intent);
+                    Log.i(TAG,"Main layout");
+                    break;
+                case R.id.bn_fav:
+                    break;
+                case R.id.bn_history:
+                    Toast.makeText(ListActivity.this, "add", Toast.LENGTH_SHORT).show();
+                    break;
+                case R.id.bn_child:
+                    intent = new Intent(ListActivity.this , ChildActivity.class);
+                    ListActivity.this.startActivity(intent);
+                    Log.i(TAG,"Child layout");
+                    break;
+            }
+            return true;
+        }
+    };
 
+    @Override
+    public boolean onNavigationItemSelected(MenuItem item)
+    {
+        // Handle navigation view item clicks here.
+        int id = item.getItemId();
+        Intent  intent;
+        switch (id) {
+            case R.id.nav_child:
+//                intent = new Intent(MainActivity.this , ChildActivity.class);
+//                MainActivity.this.startActivity(intent);
+//                Log.i(TAG,"Child layout");
+                break;
+
+            case R.id.nav_settings:
+                intent = new Intent(ListActivity.this , Settings.class);
+                ListActivity.this.startActivity(intent);
+                Log.i(TAG,"Settings layout");
+                break;
+
+        }
+
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        drawer.closeDrawer(GravityCompat.START);
+        return true;
+    }
 
     private final AdapterView.OnItemClickListener itemListener = new AdapterView.OnItemClickListener() {
         @Override
@@ -88,25 +155,36 @@ public class ListActivity extends Activity {
             intent.putExtra("url",url);
             startActivity(intent);
             Log.i(TAG,"Video layout");
-            finish();
 
         }   else    {
             intent = new Intent(getApplicationContext() , YouTubeActivity.class);
             intent.putExtra("url",url);
             startActivity(intent);
             Log.i(TAG,"YouTube layout");
-            finish();
         }
 
     }
 
     @Override
     public void onBackPressed() {
-        Intent intentMain = new Intent(ListActivity.this ,
-                MainActivity.class);
-        ListActivity.this.startActivity(intentMain);
-        Log.i("Curator: ","Main layout");
-        finish();
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        if (drawer.isDrawerOpen(GravityCompat.START)) {
+            drawer.closeDrawer(GravityCompat.START);
+        } else {
+            if (doubleBackPressedOnce)  {
+                Intent intent = new Intent(ListActivity.this, CloseActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+            }
+            Toast.makeText(this, "Press back again to exit", Toast.LENGTH_SHORT).show();
+            doubleBackPressedOnce   =   true;
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    doubleBackPressedOnce   =   false;
+                }
+            },  2000);
+        }
     }
 }
 

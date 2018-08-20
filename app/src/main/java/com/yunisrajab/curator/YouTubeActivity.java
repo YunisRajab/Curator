@@ -67,7 +67,6 @@ public class YouTubeActivity extends YouTubeBaseActivity implements YouTubePlaye
 
         mHandler = new Handler();
 
-//        TODO handle mobile links
         url = getIntent().getStringExtra("url");
         if (url.contains("=")) {
             url = url.substring(url.lastIndexOf("=") + 1);

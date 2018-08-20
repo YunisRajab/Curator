@@ -1,6 +1,7 @@
 package com.yunisrajab.curator;
 
 import android.net.Uri;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.MediaController;
 import android.widget.VideoView;
@@ -11,7 +12,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.TextView;
 
-public class VideoActivity extends Activity{
+public class VideoActivity extends AppCompatActivity {
 
     MediaController vidControl;
     VideoView mVideoView;

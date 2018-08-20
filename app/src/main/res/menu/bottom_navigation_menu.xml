@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+
+    <item
+        android:id="@+id/bn_cloud"
+        android:enabled="true"
+        android:icon="@drawable/ic_action_cloud"
+        android:title="Cloud"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/bn_fav"
+        android:enabled="true"
+        android:icon="@drawable/ic_action_fav"
+        android:title="Favourites"
+        app:showAsAction="ifRoom" />
+    <item
+        android:title="History"
+        android:id="@+id/bn_history"
+        android:enabled="true"
+        app:showAsAction="ifRoom"
+        android:icon="@drawable/ic_action_history"/>
+
+    <item
+        android:title="Child"
+        android:id="@+id/bn_child"
+        android:enabled="true"
+        app:showAsAction="ifRoom"
+        android:icon="@drawable/ic_action_child"/>
+</menu>
