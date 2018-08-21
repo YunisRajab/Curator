@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item   android:title="Views">
+        <menu>
+            <item
+                android:id="@+id/nav_parent"
+                android:title="Parent View"/>
+            <item
+                android:id="@+id/nav_child"
+                android:title="Child View"/>
+        </menu>
+    </item>
+    <item android:title="Submenu">
+        <menu>
+            <item
+                android:id="@+id/nav_extra1"
+                android:title="Extra1" />
+            <item
+                android:id="@+id/nav_extra2"
+                android:title="Extra2" />
+        </menu>
+    </item>
+    <item
+        android:id="@+id/nav_settings"
+        android:title="Settings"/>
+
+</menu>
