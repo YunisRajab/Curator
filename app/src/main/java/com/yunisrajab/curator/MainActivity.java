@@ -1,11 +1,16 @@
 package com.yunisrajab.curator;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.AsyncTask;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.design.bottomnavigation.LabelVisibilityMode;
 import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.NavigationView;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
@@ -15,8 +20,10 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -33,6 +40,7 @@ import com.google.firebase.database.ValueEventListener;
 import org.json.JSONObject;
 import org.mortbay.jetty.Main;
 
+import java.io.InputStream;
 import java.net.URL;
 
 
@@ -50,7 +58,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     ListView    mListView;
     boolean doubleBackPressedOnce   =   false;
     DatabaseManager mDatabaseManager;
-
+    int counter =   0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,6 +93,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             }
         }
 
+        mDatabaseManager.updateMain();
+
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         toolbar.setTitle("Cloud");
         setSupportActionBar(toolbar);
@@ -99,18 +109,19 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         menuItem.setChecked(true);
         bottomNavigationView.setOnNavigationItemSelectedListener(mItemSelectedListener);
 
-        mDatabaseReference  = FirebaseDatabase.getInstance().getReference();;
+        mDatabaseReference  = FirebaseDatabase.getInstance().getReference();
 
-        final DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-        rootRef.child("Users").addListenerForSingleValueEvent(new ValueEventListener() {
+        mDatabaseReference.child("Users").addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                if (!dataSnapshot.hasChild(mUser.uid)) {
-                    Toast.makeText(getApplicationContext(),"Welcome!",Toast.LENGTH_LONG).show();
-                    rootRef.child("Main_List").addListenerForSingleValueEvent(new ValueEventListener() {
+                if (dataSnapshot.hasChild(mUser.uid)) {
+                    Toast.makeText(getApplicationContext(),"Welcome back!",Toast.LENGTH_SHORT).show();
+                }   else {
+                    Toast.makeText(getApplicationContext(),"Welcome!",Toast.LENGTH_SHORT).show();
+                    mDatabaseReference.child("Main_List").addListenerForSingleValueEvent(new ValueEventListener() {
                         @Override
                         public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                            mDatabaseReference.setValue(dataSnapshot.getValue());
+                            mDatabaseReference.child("Users").child(mUser.uid).setValue(dataSnapshot.getValue());
                         }
 
                         @Override
@@ -118,8 +129,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
                         }
                     });
-                }   else {
-                    Toast.makeText(getApplicationContext(),"Welcome back!",Toast.LENGTH_LONG).show();
                 }
             }
 
@@ -181,6 +190,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             case R.id.nav_child:
                 break;
             case R.id.nav_parent:
+               break;
+            case R.id.nav_browser:
+                intent = new Intent(MainActivity.this , WebActivity.class);
+                MainActivity.this.startActivity(intent);
+                Log.i(TAG,"Browser layout");
                 break;
             case R.id.nav_settings:
                 intent = new Intent(MainActivity.this , Settings.class);
@@ -195,6 +209,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         return true;
     }
 
+    private void setFragment(Fragment   fragment)  {
+        FragmentTransaction fragmentTransaction =   getSupportFragmentManager().beginTransaction();
+        fragmentTransaction.replace(R.id.mainFrame,  fragment);
+        fragmentTransaction.commit();
+
+    }
+
     @Override
     public void onBackPressed() {
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -205,15 +226,17 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 Intent intent = new Intent(MainActivity.this, CloseActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(intent);
+            }   else {
+                Toast.makeText(this, "Press back again to exit", Toast.LENGTH_SHORT).show();
+                doubleBackPressedOnce   =   true;
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        doubleBackPressedOnce   =   false;
+                    }
+                },  2000);
             }
-            Toast.makeText(this, "Press back again to exit", Toast.LENGTH_SHORT).show();
-            doubleBackPressedOnce   =   true;
-            new Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    doubleBackPressedOnce   =   false;
-                }
-            },  2000);
+
         }
     }
 }

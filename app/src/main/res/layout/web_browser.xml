@@ -1,0 +1,35 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="@color/colorPrimaryDark">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/browserBar"
+        android:orientation="horizontal"
+        android:layout_alignParentTop="true">
+
+
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/browserUrl"
+            android:inputType="textVisiblePassword"/>
+
+        <!--<ActionMenuView-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:layout_height="wrap_content"></ActionMenuView>-->
+
+    </LinearLayout>
+
+    <org.xwalk.core.XWalkView
+        android:id="@+id/xwalkWebView"
+        android:orientation="vertical"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:background="@color/colorPrimaryDark"
+        android:layout_below="@+id/browserBar"/>
+
+</RelativeLayout>

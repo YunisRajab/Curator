@@ -60,9 +60,7 @@ public class Settings   extends AppCompatActivity {
         addButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                final String  url =   urlText.getText().toString().trim();
-                int rating    =   1;
-                mDatabaseManager.upload(url,rating);
+                mDatabaseManager.upload(urlText.getText().toString().trim(),1);
                 urlText.getText().clear();
                 addButton.setEnabled(false);
             }

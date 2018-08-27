@@ -7,8 +7,11 @@ import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import org.apache.commons.io.IOUtils;
 import org.json.JSONObject;
@@ -21,8 +24,9 @@ public class DatabaseManager {
     UserLocalData userLocalData;
     User    mUser;
     DatabaseReference mDatabaseReference;
-    boolean success;
     Context mContext;
+    int counter =   0;
+    String  videoID;
 
     DatabaseManager (Context    context)  {
         mContext    =   context;
@@ -31,10 +35,42 @@ public class DatabaseManager {
         mUser   =   userLocalData.getLoggedUser();
     }
 
-    public void upload    (String   url,    int rate)  {
-        final String   youtubeUrl   =   url;
+    public void updateMain ()  {
+        mDatabaseReference.child("Main_List").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                for (final DataSnapshot   videoSnap:  dataSnapshot.getChildren()) {
+
+                    mDatabaseReference.child("Users").addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                            for (final DataSnapshot   userSnap:  dataSnapshot.getChildren()) {
+
+                                if (userSnap.hasChild(videoSnap.getKey()))    {
+                                    if (videoID  !=  videoSnap.getKey())  {
+                                        videoID  =   videoSnap.getKey();
+                                        counter =   0;
+                                    }
+                                    counter++;
+                                    mDatabaseReference.child("Main_List").child(videoSnap.getKey())
+                                                .child("rating").setValue(counter);
+                                    mDatabaseReference.child("Users").child(userSnap.getKey()).child(videoSnap.getKey())
+                                                .child("rating").setValue(counter);
+                                }
+                            }
+                        }
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError databaseError) {}
+                    });
+                }
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {}
+        });
+    }
+
+    public void upload    (final    String   url,    final   int rating)  {
         final String  videoID;
-        final int   rating  =   rate;
         if (url.contains("=")) {
             videoID = url.substring(url.lastIndexOf("=") + 1);
         }   else {
@@ -45,25 +81,25 @@ public class DatabaseManager {
             public void run() {
                 try{
                     final URL embededURL = new URL("http://www.youtube.com/oembed?url=" +
-                            youtubeUrl + "&format=json");
+                            url + "&format=json");
                     final String  title   =
                             new JSONObject(IOUtils.toString(embededURL))
                                     .getString("title");
 
-                    final Video video =   new Video(title,youtubeUrl,rating);
+                    final Video video =   new Video(title,url,rating);
 
                     mDatabaseReference.child("Users").child(mUser.uid).child(videoID).setValue(video).addOnCompleteListener(new OnCompleteListener<Void>() {
                         @Override
                         public void onComplete(@NonNull Task<Void> task) {
                             if (task.isSuccessful())    {
                                 Toast.makeText(mContext, "Success", Toast.LENGTH_SHORT).show();
-                                success =   true;
+                                mDatabaseReference.child("Main_List").child(videoID).setValue(video);
                             }   else {
                                 Toast.makeText(mContext, "Failed", Toast.LENGTH_SHORT).show();
-                                success =   false;
                             }
                         }
                     });
+                    updateMain();
                 }
                 catch(Exception e)
                 {
@@ -71,6 +107,5 @@ public class DatabaseManager {
                 }
             }
         }).start();
-//        return success;
     }
 }

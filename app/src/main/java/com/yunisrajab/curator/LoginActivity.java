@@ -42,7 +42,6 @@ public class LoginActivity  extends AppCompatActivity {
         emailText   =   findViewById(R.id.emailText);
         passText    =   findViewById(R.id.passText);
 
-        loginButton.setOnClickListener(loginListener);
         emailText.addTextChangedListener(textWatcher);
         passText.addTextChangedListener(textWatcher);
 
@@ -61,7 +60,19 @@ public class LoginActivity  extends AppCompatActivity {
         registerButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                createUser(emailText.getText().toString().trim(),   passText.getText().toString().trim());
+                mEmail   =   emailText.getText().toString().trim();
+                mPassword    =   passText.getText().toString().trim();
+                createUser();
+                login();
+            }
+        });
+
+        loginButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mEmail   =   emailText.getText().toString().trim();
+                mPassword    =   passText.getText().toString().trim();
+                login();
             }
         });
     }
@@ -89,47 +100,42 @@ public class LoginActivity  extends AppCompatActivity {
         }
     };
 
-    private View.OnClickListener loginListener  =   new View.OnClickListener() {
-        @Override
-        public void onClick(View view) {
-            mEmail   =   emailText.getText().toString().trim();
-            mPassword    =   passText.getText().toString().trim();
+    private void login  () {
+        mEmail   =   emailText.getText().toString().trim();
+        mPassword    =   passText.getText().toString().trim();
 
-            mAuth.signInWithEmailAndPassword(mEmail, mPassword).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
-                @Override
-                public void onComplete(@NonNull Task<AuthResult> task) {
-                    if (!task.isSuccessful())    {
-                        String error = task.getException().getMessage();
-                        if (task.getException() instanceof FirebaseAuthInvalidCredentialsException) {
-                            Log.e(TAG,"Wrong password "+error);
-                            Toast.makeText(getApplicationContext(), "The password is incorrect",    Toast.LENGTH_LONG).show();
-                        }   else   if (task.getException() instanceof FirebaseAuthInvalidUserException)    {
-                            Log.e(TAG,"Wrong email "+error);
-                            Toast.makeText(getApplicationContext(), "The email doesn't exist. Click register to sign up",    Toast.LENGTH_LONG).show();
-                        }   else    {
-                            Log.e(TAG,error);
-                            Toast.makeText(getApplicationContext(), error,    Toast.LENGTH_LONG).show();
-                        }
+        mAuth.signInWithEmailAndPassword(mEmail, mPassword).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+            @Override
+            public void onComplete(@NonNull Task<AuthResult> task) {
+                if (!task.isSuccessful())    {
+                    String error = task.getException().getMessage();
+                    if (task.getException() instanceof FirebaseAuthInvalidCredentialsException) {
+                        Log.e(TAG,"Wrong password "+error);
+                        Toast.makeText(getApplicationContext(), "The password is incorrect",    Toast.LENGTH_LONG).show();
+                    }   else   if (task.getException() instanceof FirebaseAuthInvalidUserException)    {
+                        Log.e(TAG,"Wrong email "+error);
+                        Toast.makeText(getApplicationContext(), "The email doesn't exist. Click register to sign up",    Toast.LENGTH_LONG).show();
                     }   else    {
-                        mUid =   mAuth.getCurrentUser().getUid();
-                        User    user    =   new User(mEmail, mPassword,   mUid);
-                        userLocalData.setUserLoggedIn(true);
-                        userLocalData.storeUserData(user);
-
-                        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                        LoginActivity.this.startActivity(intent);
-                        Log.i("Curator", "Main layout");
-                        finish();
+                        Log.e(TAG,error);
+                        Toast.makeText(getApplicationContext(), error,    Toast.LENGTH_LONG).show();
                     }
+                }   else    {
+                    mUid =   mAuth.getCurrentUser().getUid();
+                    User    user    =   new User(mEmail, mPassword,   mUid);
+                    userLocalData.setUserLoggedIn(true);
+                    userLocalData.storeUserData(user);
+
+                    Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                    LoginActivity.this.startActivity(intent);
+                    Log.i("Curator", "Main layout");
+                    finish();
                 }
-            });
-        }
-    };
+            }
+        });
+    }
 
-
-    private void createUser (String email,  String  password)  {
-
-        mAuth.createUserWithEmailAndPassword(email, password)
+    private void createUser ()  {
+        mAuth.createUserWithEmailAndPassword(mEmail, mPassword)
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
@@ -145,8 +151,6 @@ public class LoginActivity  extends AppCompatActivity {
                                     Toast.LENGTH_LONG).show();
                             Log.e(TAG,"Failed to create account "+task.getException().getMessage());
                         }
-
-                        // ...
                     }
                 });
     }

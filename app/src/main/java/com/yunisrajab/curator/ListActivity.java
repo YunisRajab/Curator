@@ -24,6 +24,8 @@ import com.firebase.ui.database.FirebaseListAdapter;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
+import java.util.List;
+
 public class ListActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     ListView mListView;
@@ -175,15 +177,17 @@ public class ListActivity extends AppCompatActivity implements NavigationView.On
                 Intent intent = new Intent(ListActivity.this, CloseActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(intent);
+            }   else {
+                Toast.makeText(this, "Press back again to exit", Toast.LENGTH_SHORT).show();
+                doubleBackPressedOnce   =   true;
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        doubleBackPressedOnce   =   false;
+                    }
+                },  2000);
             }
-            Toast.makeText(this, "Press back again to exit", Toast.LENGTH_SHORT).show();
-            doubleBackPressedOnce   =   true;
-            new Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    doubleBackPressedOnce   =   false;
-                }
-            },  2000);
+
         }
     }
 }

@@ -15,6 +15,7 @@ import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -148,44 +149,6 @@ public class ChildActivity  extends AppCompatActivity   implements NavigationVie
         }
     };
 
-//    private void readFile() {
-//
-//        try {
-//            File txtFile = new File(SOURCEFILE_PATH+FILENAME);
-//            if (!txtFile.exists()) {
-//                Log.e(TAG, "File doesn't exist");
-//            }   else {
-//                FileReader fileReader = new FileReader(txtFile);
-//                BufferedReader reader = new BufferedReader(fileReader);
-//                String str;
-//                List<Map<String, String>> data = new ArrayList<>();
-//                while ((str = reader.readLine())!=null){
-//                    mArrayList.add(str);
-//                }
-//                for (int i=0; i<mArrayList.size();i++)  {
-//                    Map<String, String> datum = new HashMap<>(2);
-//                    datum.put("title", mArrayList.get(i));
-//                    if (i<(mArrayList.size()-1)){
-//                        i++;
-//                        datum.put("link", mArrayList.get(i));
-//                    }
-//                    data.add(datum);
-//                }
-//                SimpleAdapter adapter = new SimpleAdapter(this, data,
-//                        android.R.layout.simple_list_item_2,
-//                        new String[] {"title", "link"},
-//                        new int[] {android.R.id.text1,
-//                                android.R.id.text2});
-//                mListView.setAdapter(adapter);
-//                reader.close();
-//                fileReader.close();
-//            }
-//        } catch (IOException e) {
-//            Log.e(TAG,"Exception: "+e);
-//            e.printStackTrace();
-//        }
-//    }
-
     private void launchVideo()  {
         Intent intent;
         if (!url.contains("youtube")&&!url.contains("youtu.be"))  {
@@ -213,15 +176,17 @@ public class ChildActivity  extends AppCompatActivity   implements NavigationVie
                 Intent intent = new Intent(ChildActivity.this, CloseActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(intent);
+            }   else {
+                Toast.makeText(this, "Press back again to exit", Toast.LENGTH_SHORT).show();
+                doubleBackPressedOnce   =   true;
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        doubleBackPressedOnce   =   false;
+                    }
+                },  2000);
             }
-            Toast.makeText(this, "Press back again to exit", Toast.LENGTH_SHORT).show();
-            doubleBackPressedOnce   =   true;
-            new Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    doubleBackPressedOnce   =   false;
-                }
-            },  2000);
+
         }
     }
 
@@ -246,7 +211,15 @@ public class ChildActivity  extends AppCompatActivity   implements NavigationVie
         }
 
         protected void onPostExecute(Bitmap result) {
+//            DisplayMetrics displayMetrics = new DisplayMetrics();
+//            getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+//            int height = displayMetrics.heightPixels;
+//            int width = displayMetrics.widthPixels;
             bmImage.setImageBitmap(result);
+//            bmImage.setAdjustViewBounds(true);
+//            bmImage.setMaxHeight(height);
+//            bmImage.setMaxWidth(width);
+//            bmImage.setScaleType(ImageView.ScaleType.CENTER_CROP);
         }
     }
 }

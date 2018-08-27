@@ -48,6 +48,7 @@
         <activity android:name=".Settings" ></activity>
         <activity android:name=".CosuActivity" ></activity>
         <activity android:name=".CloseActivity" ></activity>
+        <activity android:name=".WebActivity" ></activity>
     </application>
 
 </manifest>

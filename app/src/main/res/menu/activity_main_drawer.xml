@@ -14,11 +14,11 @@
     <item android:title="Submenu">
         <menu>
             <item
-                android:id="@+id/nav_extra1"
-                android:title="Extra1" />
+                android:id="@+id/nav_browser"
+                android:title="Browser" />
             <item
-                android:id="@+id/nav_extra2"
-                android:title="Extra2" />
+                android:id="@+id/nav_extra"
+                android:title="Extra" />
         </menu>
     </item>
     <item

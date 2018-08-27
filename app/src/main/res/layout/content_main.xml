@@ -39,6 +39,13 @@
                 android:layout_marginTop="@dimen/activity_half_margin"
                 android:layout_above="@+id/bottomNavigation"/>
 
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/mainFrame">
+
+            </FrameLayout>
+
             <android.support.design.widget.BottomNavigationView
                 android:id="@+id/bottomNavigation"
                 android:layout_width="match_parent"
@@ -50,6 +57,8 @@
                 app:menu="@menu/bottom_navigation_menu" />
         </RelativeLayout>
     </RelativeLayout>
+
+
 
 
 </android.support.design.widget.CoordinatorLayout>
