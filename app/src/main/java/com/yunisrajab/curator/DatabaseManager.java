@@ -41,7 +41,8 @@ public class DatabaseManager {
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 for (final DataSnapshot   videoSnap:  dataSnapshot.getChildren()) {
 
-                    mDatabaseReference.child("Users").addListenerForSingleValueEvent(new ValueEventListener() {
+                    mDatabaseReference.child("Users").child("White_List")
+                            .addListenerForSingleValueEvent(new ValueEventListener() {
                         @Override
                         public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                             for (final DataSnapshot   userSnap:  dataSnapshot.getChildren()) {
@@ -57,6 +58,21 @@ public class DatabaseManager {
                                     mDatabaseReference.child("Users").child(userSnap.getKey()).child(videoSnap.getKey())
                                                 .child("rating").setValue(counter);
                                 }
+//                                TODO check if the below code functions as intended
+                                mDatabaseReference.child("Users").child(mUser.uid).child("Black_List")
+                                        .addListenerForSingleValueEvent(new ValueEventListener() {
+                                            @Override
+                                            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                                                mDatabaseReference.child("Users").child(mUser.uid)
+                                                        .child("Black_List").child(videoID).child("rating")
+                                                        .setValue(counter);
+                                            }
+
+                                            @Override
+                                            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                            }
+                                        });
                             }
                         }
                         @Override
@@ -87,18 +103,32 @@ public class DatabaseManager {
                                     .getString("title");
 
                     final Video video =   new Video(title,url,rating);
-
-                    mDatabaseReference.child("Users").child(mUser.uid).child(videoID).setValue(video).addOnCompleteListener(new OnCompleteListener<Void>() {
+                    mDatabaseReference.child("Users").child(mUser.uid).child("Black_List")
+                            .addListenerForSingleValueEvent(new ValueEventListener() {
                         @Override
-                        public void onComplete(@NonNull Task<Void> task) {
-                            if (task.isSuccessful())    {
-                                Toast.makeText(mContext, "Success", Toast.LENGTH_SHORT).show();
-                                mDatabaseReference.child("Main_List").child(videoID).setValue(video);
-                            }   else {
-                                Toast.makeText(mContext, "Failed", Toast.LENGTH_SHORT).show();
+                        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                            if (dataSnapshot.hasChild(videoID)) {
+                                mDatabaseReference.child("Users").child(mUser.uid).child("White_List")
+                                        .child(videoID).setValue(video).addOnCompleteListener(new OnCompleteListener<Void>() {
+                                    @Override
+                                    public void onComplete(@NonNull Task<Void> task) {
+                                        if (task.isSuccessful())    {
+                                            Toast.makeText(mContext, "Success", Toast.LENGTH_SHORT).show();
+                                            mDatabaseReference.child("Main_List").child(videoID).setValue(video);
+                                        }   else {
+                                            Toast.makeText(mContext, "Failed", Toast.LENGTH_SHORT).show();
+                                        }
+                                    }
+                                });
                             }
                         }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                        }
                     });
+
                     updateMain();
                 }
                 catch(Exception e)

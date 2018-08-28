@@ -121,7 +121,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     mDatabaseReference.child("Main_List").addListenerForSingleValueEvent(new ValueEventListener() {
                         @Override
                         public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                            mDatabaseReference.child("Users").child(mUser.uid).setValue(dataSnapshot.getValue());
+                            mDatabaseReference.child("Users").child(mUser.uid).child("White_List").setValue(dataSnapshot.getValue());
                         }
 
                         @Override

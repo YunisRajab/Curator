@@ -48,7 +48,7 @@ public class ListActivity extends AppCompatActivity implements NavigationView.On
 
         FirebaseListAdapter<Video>  adapter =   new FirebaseListAdapter<Video>(
                 this,   Video.class,
-                R.layout.list_item,    mDatabaseReference
+                R.layout.list_item,    mDatabaseReference.child("White_List")
         ) {
             @Override
             protected void populateView(View v, Video model, int position) {
