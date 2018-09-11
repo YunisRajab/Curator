@@ -32,15 +32,6 @@ public class YouTubeActivity extends YouTubeBaseActivity implements YouTubePlaye
     private String TAG = "YT";
     String url;
 
-    @Override
-    public void onBackPressed() {
-        Intent intentMain = new Intent(YouTubeActivity.this ,
-                MainActivity.class);
-        YouTubeActivity.this.startActivity(intentMain);
-        Log.i("Curator: ","Main layout");
-        finish();
-    }
-
     private static final int RECOVERY_REQUEST = 1;
     private YouTubePlayerView youTubeView;
 
@@ -134,7 +125,7 @@ public class YouTubeActivity extends YouTubeBaseActivity implements YouTubePlaye
         @Override
         public void onPlaying() {
             // Called when playback starts, either due to user action or call to play().
-            showMessage("Playing");
+//            showMessage("Playing");
             mHandler.postDelayed(runnable, 100);
             displayCurrentTime();
         }
@@ -142,7 +133,7 @@ public class YouTubeActivity extends YouTubeBaseActivity implements YouTubePlaye
         @Override
         public void onPaused() {
             // Called when playback is paused, either due to user action or call to pause().
-            showMessage("Paused");
+//            showMessage("Paused");
             mPlayer.setFullscreen(false);
             mHandler.removeCallbacks(runnable);
         }
@@ -150,7 +141,7 @@ public class YouTubeActivity extends YouTubeBaseActivity implements YouTubePlaye
         @Override
         public void onStopped() {
             // Called when playback stops for a reason other than being paused.
-            showMessage("Stopped");
+//            showMessage("Stopped");
             mHandler.removeCallbacks(runnable);
         }
 

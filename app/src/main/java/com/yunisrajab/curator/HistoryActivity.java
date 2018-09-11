@@ -1,10 +1,10 @@
 package com.yunisrajab.curator;
 
+import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -23,20 +23,19 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import com.firebase.ui.database.FirebaseListAdapter;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
 
 import java.io.InputStream;
-import java.util.List;
 
-public class ListActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
+public class HistoryActivity    extends AppCompatActivity   implements NavigationView.OnNavigationItemSelectedListener {
 
     ListView mListView;
     String TAG = "Curator list";
@@ -46,27 +45,28 @@ public class ListActivity extends AppCompatActivity implements NavigationView.On
     UserLocalData   mUserLocalData;
     boolean doubleBackPressedOnce   =   false;
     AlertDialog.Builder builder;
-    Video   video;
+    History mHistory;
     DatabaseManager mDatabaseManager;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_listview);
+        setContentView(R.layout.activity_history);
 
         mDatabaseManager    =   new DatabaseManager(this);
-        mListView   =   (ListView)  findViewById(R.id.favList);
+        mListView   =   (ListView)  findViewById(R.id.historyList);
         mUserLocalData  =   new UserLocalData(getApplicationContext());
         mUser   =   mUserLocalData.getLoggedUser();
         mDatabaseReference  = FirebaseDatabase.getInstance().getReference().child("Users").child(mUser.uid);
 
-        FirebaseListAdapter<Video>  adapter =   new FirebaseListAdapter<Video>(
-                this,   Video.class,
-                R.layout.fav_list_item,    mDatabaseReference.child("White_List").orderByChild("title")
+        ReverseFirebaseListAdapter<History> adapter =   new ReverseFirebaseListAdapter<History>(
+                this,   History.class,
+                R.layout.history_item,    mDatabaseReference.child("History").orderByChild("time")
         ) {
             @Override
-            protected void populateView(View v, Video model, int position) {
+            protected void populateView(View v, History model, int position) {
                 ((TextView)v.findViewById(R.id.itemName)).setText(model.getTitle());
+                ((TextView)v.findViewById(R.id.itemTime)).setText(model.getTime());
                 String  uri = model.getUrl();
                 if (uri.contains("=")) {
                     uri = uri.substring(uri.lastIndexOf("=") + 1);
@@ -82,8 +82,8 @@ public class ListActivity extends AppCompatActivity implements NavigationView.On
             @Override
             public boolean onItemLongClick(AdapterView<?> arg0, View arg1,
                                            int pos, long id) {
-                video = (Video) mListView.getItemAtPosition(pos);
-                videoID =   video.getUrl();
+                mHistory = (History) mListView.getItemAtPosition(pos);
+                videoID =   mHistory.getUrl();
                 if (videoID.contains("=")) {
                     videoID = videoID.substring(videoID.lastIndexOf("=") + 1);
                 }   else {
@@ -102,8 +102,8 @@ public class ListActivity extends AppCompatActivity implements NavigationView.On
 
         BottomNavigationView bottomNavigationView    =   findViewById(R.id.bottomNavigation);
         bottomNavigationView.setLabelVisibilityMode(LabelVisibilityMode.LABEL_VISIBILITY_LABELED);
-        Menu   menu    =   bottomNavigationView.getMenu();
-        MenuItem    menuItem    =   menu.getItem(1);
+        Menu menu    =   bottomNavigationView.getMenu();
+        MenuItem    menuItem    =   menu.getItem(2);
         menuItem.setChecked(true);
         bottomNavigationView.setOnNavigationItemSelectedListener(mItemSelectedListener);
 
@@ -117,7 +117,7 @@ public class ListActivity extends AppCompatActivity implements NavigationView.On
         public void onClick(DialogInterface dialog, int which) {
             switch (which){
                 case DialogInterface.BUTTON_POSITIVE:
-                    mDatabaseManager.delete(video,  videoID);
+                    mDatabaseReference.child("History").child(videoID).removeValue();
                     break;
 //                case DialogInterface.BUTTON_NEGATIVE:
 //                    //No button clicked
@@ -127,27 +127,42 @@ public class ListActivity extends AppCompatActivity implements NavigationView.On
         }
     };
 
+    public abstract class ReverseFirebaseListAdapter<T> extends FirebaseListAdapter<T> {
+
+        public ReverseFirebaseListAdapter(Activity activity, Class<T> modelClass, int modelLayout, Query ref) {
+            super(activity, modelClass, modelLayout, ref);
+        }
+
+        public ReverseFirebaseListAdapter(Activity activity, Class<T> modelClass, int modelLayout, DatabaseReference ref) {
+            super(activity, modelClass, modelLayout, ref);
+        }
+
+        @Override
+        public T getItem(int position) {
+            return super.getItem(getCount() - (position + 1));
+        }
+    }
 
     private BottomNavigationView.OnNavigationItemSelectedListener   mItemSelectedListener   =   new BottomNavigationView.OnNavigationItemSelectedListener() {
         @Override
         public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-            Intent  intent;
+            Intent intent;
             switch (item.getItemId())   {
                 case R.id.bn_cloud:
-                    intent = new Intent(ListActivity.this , MainActivity.class);
-                    ListActivity.this.startActivity(intent);
+                    intent = new Intent(HistoryActivity.this , MainActivity.class);
+                    HistoryActivity.this.startActivity(intent);
                     Log.i(TAG,"Main layout");
                     break;
                 case R.id.bn_fav:
+                    intent = new Intent(HistoryActivity.this , ListActivity.class);
+                    HistoryActivity.this.startActivity(intent);
+                    Log.i(TAG,"Fav layout");
                     break;
                 case R.id.bn_history:
-                    intent = new Intent(ListActivity.this , HistoryActivity.class);
-                    ListActivity.this.startActivity(intent);
-                    Log.i(TAG,"History layout");
                     break;
                 case R.id.bn_child:
-                    intent = new Intent(ListActivity.this , ChildActivity.class);
-                    ListActivity.this.startActivity(intent);
+                    intent = new Intent(HistoryActivity.this , ChildActivity.class);
+                    HistoryActivity.this.startActivity(intent);
                     Log.i(TAG,"Child layout");
                     break;
             }
@@ -169,8 +184,8 @@ public class ListActivity extends AppCompatActivity implements NavigationView.On
                 break;
 
             case R.id.nav_settings:
-                intent = new Intent(ListActivity.this , Settings.class);
-                ListActivity.this.startActivity(intent);
+                intent = new Intent(HistoryActivity.this , Settings.class);
+                HistoryActivity.this.startActivity(intent);
                 Log.i(TAG,"Settings layout");
                 break;
 
@@ -179,34 +194,6 @@ public class ListActivity extends AppCompatActivity implements NavigationView.On
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
-    }
-
-    private final AdapterView.OnItemClickListener itemListener = new AdapterView.OnItemClickListener() {
-        @Override
-        public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-            Video   video = (Video) mListView.getItemAtPosition(i);
-
-//            url = mURLs.get(index2);
-//            Log.e(TAG,""+url);
-//            launchVideo();
-        }
-    };
-
-    private void launchVideo()  {
-        Intent intent;
-        if (!url.contains("youtube")&&!url.contains("youtu.be"))  {
-            intent = new Intent(ListActivity.this , VideoActivity.class);
-            intent.putExtra("url",url);
-            startActivity(intent);
-            Log.i(TAG,"Video layout");
-
-        }   else    {
-            intent = new Intent(getApplicationContext() , YouTubeActivity.class);
-            intent.putExtra("url",url);
-            startActivity(intent);
-            Log.i(TAG,"YouTube layout");
-        }
-
     }
 
     private class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
@@ -249,7 +236,7 @@ public class ListActivity extends AppCompatActivity implements NavigationView.On
             drawer.closeDrawer(GravityCompat.START);
         } else {
             if (doubleBackPressedOnce)  {
-                Intent intent = new Intent(ListActivity.this, CloseActivity.class);
+                Intent intent = new Intent(HistoryActivity.this, CloseActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(intent);
             }   else {
@@ -266,4 +253,3 @@ public class ListActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 }
-

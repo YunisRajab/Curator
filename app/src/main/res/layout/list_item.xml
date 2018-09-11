@@ -34,28 +34,36 @@
 
         <TextView
             android:id="@+id/ratingView"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginTop="@dimen/activity_half_margin"
             android:layout_marginBottom="@dimen/activity_half_margin"
             android:layout_marginLeft="@dimen/activity_horizontal_margin"
             android:layout_marginRight="@dimen/activity_horizontal_margin"
+            android:layout_marginTop="@dimen/activity_half_margin"
+            android:layout_weight="1"
             android:text="TextView" />
 
-        <menu>
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent">
 
-            <item
+            <CheckBox
                 android:id="@+id/upvote"
-                android:icon="@drawable/ic_action_upvote"
-                android:title="" />
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:button="@drawable/ic_action_upvote"
+                android:buttonTint="@drawable/item_color_state"/>
 
-            <item
+            <CheckBox
                 android:id="@+id/downvote"
-                android:icon="@drawable/ic_action_downvote"
-                android:title="" />
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:button="@drawable/ic_action_downvote"
+                android:buttonTint="@drawable/item_color_state"/>
+        </LinearLayout>
 
-        </menu>
 
 
     </LinearLayout>

@@ -49,6 +49,7 @@
         <activity android:name=".CosuActivity" ></activity>
         <activity android:name=".CloseActivity" ></activity>
         <activity android:name=".WebActivity" ></activity>
+        <activity android:name=".HistoryActivity" ></activity>
     </application>
 
 </manifest>

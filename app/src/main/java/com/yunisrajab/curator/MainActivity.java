@@ -1,5 +1,6 @@
 package com.yunisrajab.curator;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -22,6 +23,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -36,12 +39,16 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 import org.json.JSONObject;
 import org.mortbay.jetty.Main;
 
 import java.io.InputStream;
 import java.net.URL;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener{
@@ -58,7 +65,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     ListView    mListView;
     boolean doubleBackPressedOnce   =   false;
     DatabaseManager mDatabaseManager;
-    int counter =   0;
+    String videoID;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,12 +77,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         userLocalData   =   new UserLocalData(this);
         mUser   =   userLocalData.getLoggedUser();
 
+//        TODO check if user logged in with mAuth
         if (!userLocalData.getUserLoggedIn())    {
             Intent intent = new Intent(MainActivity.this, LoginActivity.class);
             MainActivity.this.startActivity(intent);
             Log.i("Curator", "Login layout");
             finish();
-        }
+        }   else FirebaseAuth.getInstance().signInWithEmailAndPassword(mUser.email, mUser.password);
 
         mDatabaseManager    =   new DatabaseManager(this);
 
@@ -92,8 +100,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 }
             }
         }
-
-        mDatabaseManager.updateMain();
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         toolbar.setTitle("Cloud");
@@ -114,9 +120,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         mDatabaseReference.child("Users").addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                if (dataSnapshot.hasChild(mUser.uid)) {
-                    Toast.makeText(getApplicationContext(),"Welcome back!",Toast.LENGTH_SHORT).show();
-                }   else {
+                if (!dataSnapshot.hasChild(mUser.uid)) {
                     Toast.makeText(getApplicationContext(),"Welcome!",Toast.LENGTH_SHORT).show();
                     mDatabaseReference.child("Main_List").addListenerForSingleValueEvent(new ValueEventListener() {
                         @Override
@@ -140,18 +144,56 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         mListView   =   (ListView)  findViewById(R.id.cloudList);
 
-        FirebaseListAdapter<Video> adapter =   new FirebaseListAdapter<Video>(
+        ReverseFirebaseListAdapter<Video> adapter =   new ReverseFirebaseListAdapter<Video>(
                 this,   Video.class,
-                R.layout.list_item,    mDatabaseReference.child("Main_List")
+                R.layout.list_item,    mDatabaseReference.child("Main_List").orderByChild("rating")
         ) {
             @Override
             protected void populateView(View v, Video model, int position) {
                 ((TextView)v.findViewById(R.id.titleView)).setText(model.getTitle());
                 ((TextView)v.findViewById(R.id.urlView)).setText(model.getUrl());
                 ((TextView)v.findViewById(R.id.ratingView)).setText(String.valueOf(model.getRating()));
+                CheckBox    upbox    =   (CheckBox)v.findViewById(R.id.upvote);
+                CheckBox    downbox    =   (CheckBox)v.findViewById(R.id.downvote);
+                if ((model.getVote() !=  null)&&(model.getVote().containsKey(mUser.uid)))   {
+                    upbox.setChecked(model.getVote().get(mUser.uid));
+                    downbox.setChecked(!model.getVote().get(mUser.uid));
+                }
+
+                videoID =   model.getUrl();
+                if (videoID.contains("=")) videoID = videoID.substring(videoID.lastIndexOf("=") + 1);
+                else videoID = videoID.substring(videoID.lastIndexOf("/") + 1);
+
+//                TODO  BUG:    changing votes affects other videos' rating and vote state
+//                TODO may be caused by ordering
+                upbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                    @Override
+                    public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                        if (compoundButton.isPressed())  {
+                            if (b)  mDatabaseManager.updateVote(mDatabaseReference.child("Main_List").child(videoID), 1);
+                            else mDatabaseManager.updateVote(mDatabaseReference.child("Main_List").child(videoID), 0);
+                        }
+                    }
+                });
+                downbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                    @Override
+                    public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                        if (compoundButton.isPressed())  {
+                            if (b)  mDatabaseManager.updateVote(mDatabaseReference.child("Main_List").child(videoID), -1);
+                            else mDatabaseManager.updateVote(mDatabaseReference.child("Main_List").child(videoID), 0);
+                        }
+                    }
+                });
             }
         };
         mListView.setAdapter(adapter);
+
+        mListView.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View view) {
+                return false;
+            }
+        });
     }
 
     private BottomNavigationView.OnNavigationItemSelectedListener   mItemSelectedListener   =   new BottomNavigationView.OnNavigationItemSelectedListener() {
@@ -160,7 +202,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             Intent  intent;
             switch (item.getItemId())   {
                 case R.id.bn_cloud:
-                    Toast.makeText(MainActivity.this, "cloud", Toast.LENGTH_SHORT).show();
                     break;
                 case R.id.bn_fav:
                     intent = new Intent(MainActivity.this , ListActivity.class);
@@ -168,7 +209,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     Log.i(TAG,"Fave layout");
                     break;
                 case R.id.bn_history:
-                    Toast.makeText(MainActivity.this, "add", Toast.LENGTH_SHORT).show();
+                    intent = new Intent(MainActivity.this , HistoryActivity.class);
+                    MainActivity.this.startActivity(intent);
+                    Log.i(TAG,"History layout");
                     break;
                 case R.id.bn_child:
                     intent = new Intent(MainActivity.this , ChildActivity.class);
@@ -179,6 +222,22 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             return true;
         }
     };
+
+    public abstract class ReverseFirebaseListAdapter<T> extends FirebaseListAdapter<T> {
+
+        public ReverseFirebaseListAdapter(Activity activity, Class<T> modelClass, int modelLayout, Query ref) {
+            super(activity, modelClass, modelLayout, ref);
+        }
+
+        public ReverseFirebaseListAdapter(Activity activity, Class<T> modelClass, int modelLayout, DatabaseReference ref) {
+            super(activity, modelClass, modelLayout, ref);
+        }
+
+        @Override
+        public T getItem(int position) {
+            return super.getItem(getCount() - (position + 1));
+        }
+    }
 
     @Override
     public boolean onNavigationItemSelected(MenuItem item)

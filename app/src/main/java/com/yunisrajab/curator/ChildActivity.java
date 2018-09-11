@@ -1,6 +1,5 @@
 package com.yunisrajab.curator;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -15,7 +14,6 @@ import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -31,6 +29,9 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
 import java.io.*;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 
 
 public class ChildActivity  extends AppCompatActivity   implements NavigationView.OnNavigationItemSelectedListener {
@@ -58,7 +59,7 @@ public class ChildActivity  extends AppCompatActivity   implements NavigationVie
 
         FirebaseListAdapter<Video>  adapter =   new FirebaseListAdapter<Video>(
                 this,   Video.class,
-                R.layout.child_list,    mDatabaseReference.child("White_List")
+                R.layout.child_list_item,    mDatabaseReference.child("White_List").orderByChild("title")
         ) {
             @Override
             protected void populateView(View v, Video model, int position) {
@@ -106,7 +107,9 @@ public class ChildActivity  extends AppCompatActivity   implements NavigationVie
                     Log.i(TAG,"Fave layout");
                     break;
                 case R.id.bn_history:
-                    Toast.makeText(ChildActivity.this, "add", Toast.LENGTH_SHORT).show();
+                    intent = new Intent(ChildActivity.this , HistoryActivity.class);
+                    ChildActivity.this.startActivity(intent);
+                    Log.i(TAG,"History layout");
                     break;
                 case R.id.bn_child:
                     break;
@@ -145,6 +148,18 @@ public class ChildActivity  extends AppCompatActivity   implements NavigationVie
             Video   video = (Video) mListView.getItemAtPosition(i);
             url = video.getUrl();
             Log.e(TAG,""+url);
+            DateFormat df = new SimpleDateFormat("yyyy/MM/dd hh:mm a");
+            String date = df.format(Calendar.getInstance().getTime());
+
+            String videoID;
+            if (url.contains("=")) {
+                videoID = url.substring(url.lastIndexOf("=") + 1);
+            }   else {
+                videoID = url.substring(url.lastIndexOf("/") + 1);
+            }
+
+            History history =   new History(video.getTitle(),url,date);
+            mDatabaseReference.child("History").child(videoID).setValue(history);
             launchVideo();
         }
     };
