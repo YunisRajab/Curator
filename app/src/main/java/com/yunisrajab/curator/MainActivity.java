@@ -7,6 +7,7 @@ import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.bottomnavigation.LabelVisibilityMode;
 import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.NavigationView;
@@ -35,6 +36,7 @@ import com.firebase.ui.database.FirebaseListAdapter;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -163,27 +165,30 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 videoID =   model.getUrl();
                 if (videoID.contains("=")) videoID = videoID.substring(videoID.lastIndexOf("=") + 1);
                 else videoID = videoID.substring(videoID.lastIndexOf("/") + 1);
-
-//                TODO  BUG:    changing votes affects other videos' rating and vote state
+//                TODO  BUG:    changing votes only affects the last video
 //                TODO may be caused by ordering
-                upbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+
+                CompoundButton.OnCheckedChangeListener  listener    =   new CompoundButton.OnCheckedChangeListener() {
                     @Override
                     public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
                         if (compoundButton.isPressed())  {
-                            if (b)  mDatabaseManager.updateVote(mDatabaseReference.child("Main_List").child(videoID), 1);
-                            else mDatabaseManager.updateVote(mDatabaseReference.child("Main_List").child(videoID), 0);
+//                            Log.e(TAG,  videoID);
+                            if (!b) mDatabaseManager.updateVote(videoID, 0);
+                            else {
+                                if (compoundButton.getId()  ==  R.id.upvote)    {
+                                    mDatabaseManager.updateVote(videoID, 1);
+                                }
+                                if (compoundButton.getId()  ==  R.id.downvote)  {
+                                    mDatabaseManager.updateVote(videoID, -1);
+                                }
+                            }
+
                         }
                     }
-                });
-                downbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                    @Override
-                    public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                        if (compoundButton.isPressed())  {
-                            if (b)  mDatabaseManager.updateVote(mDatabaseReference.child("Main_List").child(videoID), -1);
-                            else mDatabaseManager.updateVote(mDatabaseReference.child("Main_List").child(videoID), 0);
-                        }
-                    }
-                });
+                };
+                upbox.setOnCheckedChangeListener(listener);
+                downbox.setOnCheckedChangeListener(listener);
+
             }
         };
         mListView.setAdapter(adapter);
@@ -194,7 +199,36 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 return false;
             }
         });
+
+        mDatabaseReference.child("Main_List").addChildEventListener(mChildEventListener);
     }
+
+    private ChildEventListener  mChildEventListener =   new ChildEventListener() {
+        @Override
+        public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+            Log.e(TAG,  "added "+dataSnapshot.getKey());
+        }
+
+        @Override
+        public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+            Log.e(TAG,  "changed "+dataSnapshot.getKey());
+        }
+
+        @Override
+        public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
+            Log.e(TAG,  "removed "+dataSnapshot.getKey());
+        }
+
+        @Override
+        public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+
+        }
+
+        @Override
+        public void onCancelled(@NonNull DatabaseError databaseError) {
+
+        }
+    };
 
     private BottomNavigationView.OnNavigationItemSelectedListener   mItemSelectedListener   =   new BottomNavigationView.OnNavigationItemSelectedListener() {
         @Override

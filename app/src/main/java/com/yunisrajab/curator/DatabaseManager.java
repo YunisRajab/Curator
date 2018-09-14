@@ -37,8 +37,8 @@ public class DatabaseManager {
         mUser   =   userLocalData.getLoggedUser();
     }
 
-    public void updateVote(DatabaseReference postRef, final int vote) {
-        postRef.runTransaction(new Transaction.Handler() {
+    public void updateVote(String   videoID, final int vote) {
+        mDatabaseReference.child("Main_List").child(videoID).runTransaction(new Transaction.Handler() {
             @Override
             public Transaction.Result doTransaction(MutableData mutableData) {
 
