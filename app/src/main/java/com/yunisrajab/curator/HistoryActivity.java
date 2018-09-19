@@ -67,12 +67,7 @@ public class HistoryActivity    extends AppCompatActivity   implements Navigatio
             protected void populateView(View v, History model, int position) {
                 ((TextView)v.findViewById(R.id.itemName)).setText(model.getTitle());
                 ((TextView)v.findViewById(R.id.itemTime)).setText(model.getTime());
-                String  uri = model.getUrl();
-                if (uri.contains("=")) {
-                    uri = uri.substring(uri.lastIndexOf("=") + 1);
-                }   else {
-                    uri = uri.substring(uri.lastIndexOf("/") + 1);
-                }
+                String  uri = model.getId();
                 new DownloadImageTask((ImageView) v.findViewById(R.id.thumbnail))
                         .execute("https://img.youtube.com/vi/"+uri+"/0.jpg");
             }
@@ -83,12 +78,7 @@ public class HistoryActivity    extends AppCompatActivity   implements Navigatio
             public boolean onItemLongClick(AdapterView<?> arg0, View arg1,
                                            int pos, long id) {
                 mHistory = (History) mListView.getItemAtPosition(pos);
-                videoID =   mHistory.getUrl();
-                if (videoID.contains("=")) {
-                    videoID = videoID.substring(videoID.lastIndexOf("=") + 1);
-                }   else {
-                    videoID = videoID.substring(videoID.lastIndexOf("/") + 1);
-                }
+                videoID =   mHistory.getId();
                 builder.show();
                 return true;
             }

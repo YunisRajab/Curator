@@ -2,6 +2,15 @@ package com.yunisrajab.curator;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.support.annotation.NonNull;
+import android.util.Log;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 
 public class UserLocalData {
 
@@ -17,17 +26,22 @@ public class UserLocalData {
         spEditor.putString("email", user.email);
         spEditor.putString("password", user.password);
         spEditor.putString("uid", user.uid);
-        spEditor.apply();
+        spEditor.putStringSet("votes", user.getVotesStrings());
+        spEditor.putStringSet("favs", user.getFavs());
 
+        spEditor.apply();
     }
 
     public User getLoggedUser   ()  {
         String  email   =   localUserDatabase.getString("email","");
         String  password   =   localUserDatabase.getString("password","");
         String  uid   =   localUserDatabase.getString("uid","");
+        Set<String> votes =   localUserDatabase.getStringSet("votes",null);
+        Set<String> favs =   localUserDatabase.getStringSet("favs",null);
 
         User    storedUser  =   new User(email,password,uid);
-
+        storedUser.setVotes(votes);
+        storedUser.setFavs(favs);
         return storedUser;
     }
 

@@ -3,68 +3,65 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:longClickable="true"
-    android:background="?android:attr/activatedBackgroundIndicator">
+    android:background="?android:attr/activatedBackgroundIndicator"
+    android:longClickable="true">
 
     <TextView
         android:id="@+id/titleView"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
         android:layout_marginLeft="@dimen/activity_horizontal_margin"
         android:layout_marginRight="@dimen/activity_horizontal_margin"
         android:layout_marginTop="@dimen/activity_half_margin"
-        android:text="TextView" />
-
-    <TextView
-        android:id="@+id/urlView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:layout_marginLeft="@dimen/activity_horizontal_margin"
-        android:layout_marginRight="@dimen/activity_horizontal_margin"
-        android:layout_marginTop="@dimen/activity_half_margin"
-        android:text="TextView" />
+        android:text="" />
 
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="vertical"
+        android:gravity="right">
 
-        <TextView
-            android:id="@+id/ratingView"
+        <CheckBox
+            android:id="@+id/favbox"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="@dimen/activity_half_margin"
-            android:layout_marginLeft="@dimen/activity_horizontal_margin"
-            android:layout_marginRight="@dimen/activity_horizontal_margin"
-            android:layout_marginTop="@dimen/activity_half_margin"
+            android:layout_height="0dp"
             android:layout_weight="1"
-            android:text="TextView" />
+            android:button="@drawable/ic_action_fav"
+            android:buttonTint="@drawable/item_color_state"/>
 
         <LinearLayout
             android:layout_width="wrap_content"
-            android:layout_height="match_parent">
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingTop="@dimen/activity_half_margin">
 
             <CheckBox
                 android:id="@+id/upvote"
                 android:layout_width="wrap_content"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:button="@drawable/ic_action_upvote"
-                android:buttonTint="@drawable/item_color_state"/>
+                android:buttonTint="@drawable/item_color_state" />
+
+            <TextView
+                android:id="@+id/ratingView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="@dimen/activity_half_margin"
+                android:layout_marginRight="@dimen/activity_half_margin"
+                android:layout_weight="1" />
 
             <CheckBox
                 android:id="@+id/downvote"
                 android:layout_width="wrap_content"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:button="@drawable/ic_action_downvote"
-                android:buttonTint="@drawable/item_color_state"/>
+                android:buttonTint="@drawable/item_color_state" />
+
+
         </LinearLayout>
-
-
-
     </LinearLayout>
+
 </LinearLayout>

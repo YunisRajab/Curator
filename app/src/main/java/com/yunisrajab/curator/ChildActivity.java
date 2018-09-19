@@ -64,14 +64,9 @@ public class ChildActivity  extends AppCompatActivity   implements NavigationVie
             @Override
             protected void populateView(View v, Video model, int position) {
                 ((TextView)v.findViewById(R.id.itemName)).setText(model.getTitle());
-                String  uri = model.getUrl();
-                if (uri.contains("=")) {
-                    uri = uri.substring(uri.lastIndexOf("=") + 1);
-                }   else {
-                    uri = uri.substring(uri.lastIndexOf("/") + 1);
-                }
+                String  id = model.getID();
                 new DownloadImageTask((ImageView) v.findViewById(R.id.thumbnail))
-                        .execute("https://img.youtube.com/vi/"+uri+"/0.jpg");
+                        .execute("https://img.youtube.com/vi/"+id+"/0.jpg");
             }
         };
         mListView.setAdapter(adapter);
@@ -146,7 +141,7 @@ public class ChildActivity  extends AppCompatActivity   implements NavigationVie
         @Override
         public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
             Video   video = (Video) mListView.getItemAtPosition(i);
-            url = video.getUrl();
+            url = video.getID();
             Log.e(TAG,""+url);
             DateFormat df = new SimpleDateFormat("yyyy/MM/dd hh:mm a");
             String date = df.format(Calendar.getInstance().getTime());
@@ -158,8 +153,8 @@ public class ChildActivity  extends AppCompatActivity   implements NavigationVie
                 videoID = url.substring(url.lastIndexOf("/") + 1);
             }
 
-            History history =   new History(video.getTitle(),url,date);
-            mDatabaseReference.child("History").child(videoID).setValue(history);
+            History history =   new History(video.getTitle(),videoID,date);
+            mDatabaseReference.child("History").push().setValue(history);
             launchVideo();
         }
     };

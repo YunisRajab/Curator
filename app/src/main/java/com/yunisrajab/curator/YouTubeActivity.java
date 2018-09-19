@@ -59,11 +59,6 @@ public class YouTubeActivity extends YouTubeBaseActivity implements YouTubePlaye
         mHandler = new Handler();
 
         url = getIntent().getStringExtra("url");
-        if (url.contains("=")) {
-            url = url.substring(url.lastIndexOf("=") + 1);
-        }   else {
-            url = url.substring(url.lastIndexOf("/") + 1);
-        }
 
         //TODO add seek controls (10 sec increment) and sync with seekbar
 //        Button seekToButton = (Button) findViewById(R.id.seekButton);
@@ -83,7 +78,7 @@ public class YouTubeActivity extends YouTubeBaseActivity implements YouTubePlaye
         displayCurrentTime();
 
         if (!wasRestored) {
-            player.cueVideo(url); // Plays https://www.youtube.com/watch?v=fhWaJi1Hsfo
+            player.cueVideo(url);
         }
 
         player.setPlayerStyle(YouTubePlayer.PlayerStyle.MINIMAL);

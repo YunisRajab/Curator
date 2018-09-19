@@ -1,6 +1,8 @@
 package com.yunisrajab.curator;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -17,12 +19,18 @@ import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.DividerItemDecoration;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
@@ -35,6 +43,7 @@ import android.widget.Toast;
 import com.firebase.ui.database.FirebaseListAdapter;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.FirebaseError;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -50,7 +59,11 @@ import java.io.InputStream;
 import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener{
@@ -64,10 +77,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     UserLocalData userLocalData;
     User    mUser;
     DatabaseReference   mDatabaseReference;
-    ListView    mListView;
+    RecyclerView    mRecyclerView;
+    ListAdapter    mAdapter;
     boolean doubleBackPressedOnce   =   false;
     DatabaseManager mDatabaseManager;
-    String videoID;
+    ArrayList<Video>    mArrayList;
+    ProgressDialog  mProgressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,7 +92,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         Log.i("Curator","Main layout");
 
         userLocalData   =   new UserLocalData(this);
-        mUser   =   userLocalData.getLoggedUser();
 
 //        TODO check if user logged in with mAuth
         if (!userLocalData.getUserLoggedIn())    {
@@ -85,9 +99,16 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             MainActivity.this.startActivity(intent);
             Log.i("Curator", "Login layout");
             finish();
-        }   else FirebaseAuth.getInstance().signInWithEmailAndPassword(mUser.email, mUser.password);
+        }   else    {
+            mUser   =   userLocalData.getLoggedUser();
+            FirebaseAuth.getInstance().signInWithEmailAndPassword(mUser.email, mUser.password);
+        }
 
         mDatabaseManager    =   new DatabaseManager(this);
+        mArrayList  =   new ArrayList<>();
+        mProgressDialog =   new ProgressDialog(this);
+        mDatabaseReference  = FirebaseDatabase.getInstance().getReference();
+        mRecyclerView   =   (RecyclerView)  findViewById(R.id.cloudListR);
 
         // Get intent, action and MIME type
         Intent intent = getIntent();
@@ -99,6 +120,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 String sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
                 if (sharedText != null) {
                     mDatabaseManager.upload(sharedText,1);
+                    getList();
                 }
             }
         }
@@ -117,8 +139,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         menuItem.setChecked(true);
         bottomNavigationView.setOnNavigationItemSelectedListener(mItemSelectedListener);
 
-        mDatabaseReference  = FirebaseDatabase.getInstance().getReference();
-
+//        TODO check what this does
         mDatabaseReference.child("Users").addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -143,92 +164,72 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
             }
         });
-
-        mListView   =   (ListView)  findViewById(R.id.cloudList);
-
-        ReverseFirebaseListAdapter<Video> adapter =   new ReverseFirebaseListAdapter<Video>(
-                this,   Video.class,
-                R.layout.list_item,    mDatabaseReference.child("Main_List").orderByChild("rating")
-        ) {
-            @Override
-            protected void populateView(View v, Video model, int position) {
-                ((TextView)v.findViewById(R.id.titleView)).setText(model.getTitle());
-                ((TextView)v.findViewById(R.id.urlView)).setText(model.getUrl());
-                ((TextView)v.findViewById(R.id.ratingView)).setText(String.valueOf(model.getRating()));
-                CheckBox    upbox    =   (CheckBox)v.findViewById(R.id.upvote);
-                CheckBox    downbox    =   (CheckBox)v.findViewById(R.id.downvote);
-                if ((model.getVote() !=  null)&&(model.getVote().containsKey(mUser.uid)))   {
-                    upbox.setChecked(model.getVote().get(mUser.uid));
-                    downbox.setChecked(!model.getVote().get(mUser.uid));
-                }
-
-                videoID =   model.getUrl();
-                if (videoID.contains("=")) videoID = videoID.substring(videoID.lastIndexOf("=") + 1);
-                else videoID = videoID.substring(videoID.lastIndexOf("/") + 1);
-//                TODO  BUG:    changing votes only affects the last video
-//                TODO may be caused by ordering
-
-                CompoundButton.OnCheckedChangeListener  listener    =   new CompoundButton.OnCheckedChangeListener() {
-                    @Override
-                    public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                        if (compoundButton.isPressed())  {
-//                            Log.e(TAG,  videoID);
-                            if (!b) mDatabaseManager.updateVote(videoID, 0);
-                            else {
-                                if (compoundButton.getId()  ==  R.id.upvote)    {
-                                    mDatabaseManager.updateVote(videoID, 1);
-                                }
-                                if (compoundButton.getId()  ==  R.id.downvote)  {
-                                    mDatabaseManager.updateVote(videoID, -1);
-                                }
-                            }
-
-                        }
-                    }
-                };
-                upbox.setOnCheckedChangeListener(listener);
-                downbox.setOnCheckedChangeListener(listener);
-
-            }
-        };
-        mListView.setAdapter(adapter);
-
-        mListView.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View view) {
-                return false;
-            }
-        });
-
-        mDatabaseReference.child("Main_List").addChildEventListener(mChildEventListener);
     }
 
-    private ChildEventListener  mChildEventListener =   new ChildEventListener() {
-        @Override
-        public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
-            Log.e(TAG,  "added "+dataSnapshot.getKey());
-        }
+    public interface OnGetDataListener {
+        void onStart();
+        void onSuccess(ArrayList data);
+        void onFailed(DatabaseError databaseError);
+    }
 
-        @Override
-        public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
-            Log.e(TAG,  "changed "+dataSnapshot.getKey());
-        }
+    public void getList(){
+        mProgressDialog.setMessage("LOADING...");
+        mProgressDialog.setIndeterminate(true);
+        mProgressDialog.show();
 
-        @Override
-        public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
-            Log.e(TAG,  "removed "+dataSnapshot.getKey());
-        }
+        final OnGetDataListener   onGetDataListener =   new OnGetDataListener() {
+            @Override
+            public void onStart() {
 
-        @Override
-        public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+            }
 
-        }
+            @Override
+            public void onSuccess(ArrayList data) {
+                mArrayList  =   data;
+                // use this setting to improve performance if you know that changes
+                // in content do not change the layout size of the RecyclerView
+                mRecyclerView.setHasFixedSize(true);
+                // use a linear layout manager
+                mRecyclerView.setLayoutManager(new LinearLayoutManager(MainActivity.this));
+                mAdapter = new ListAdapter(MainActivity.this,    mArrayList);
+                mRecyclerView.addItemDecoration(new DividerItemDecoration(mRecyclerView.getContext(), DividerItemDecoration.VERTICAL));
+                mRecyclerView.setAdapter(mAdapter);
+                if (mProgressDialog != null && mProgressDialog.isShowing()) {
+                    mProgressDialog.dismiss();
+                }
+            }
 
-        @Override
-        public void onCancelled(@NonNull DatabaseError databaseError) {
+            @Override
+            public void onFailed(DatabaseError databaseError) {
+                Log.e(TAG, databaseError.getMessage());
+                Toast.makeText(MainActivity.this, databaseError.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        };
 
-        }
-    };
+        onGetDataListener.onStart();
+        mDatabaseReference.child("Main_List").orderByChild("rating").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                for (DataSnapshot child : dataSnapshot.getChildren()) {
+                    mArrayList.add(child.getValue(Video.class));
+                }
+                Collections.reverse(mArrayList);
+                onGetDataListener.onSuccess(mArrayList);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+                onGetDataListener.onFailed(databaseError);
+            }
+        });
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        getList();
+    }
 
     private BottomNavigationView.OnNavigationItemSelectedListener   mItemSelectedListener   =   new BottomNavigationView.OnNavigationItemSelectedListener() {
         @Override

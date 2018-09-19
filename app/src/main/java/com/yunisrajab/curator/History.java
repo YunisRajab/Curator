@@ -4,12 +4,12 @@ package com.yunisrajab.curator;
 public class History {
 
     private String title;
-    private String url;
+    private String id;
     private String time;
 
-    public History(String title, String url, String time) {
+    public History(String title, String id, String time) {
         this.title = title;
-        this.url = url;
+        this.id = id;
         this.time   =   time;
     }
 
@@ -21,8 +21,8 @@ public class History {
         return title;
     }
 
-    public String getUrl() {
-        return url;
+    public String getId() {
+        return id;
     }
 
     public History    ()  {}

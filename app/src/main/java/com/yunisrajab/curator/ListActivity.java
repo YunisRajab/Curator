@@ -67,14 +67,9 @@ public class ListActivity extends AppCompatActivity implements NavigationView.On
             @Override
             protected void populateView(View v, Video model, int position) {
                 ((TextView)v.findViewById(R.id.itemName)).setText(model.getTitle());
-                String  uri = model.getUrl();
-                if (uri.contains("=")) {
-                    uri = uri.substring(uri.lastIndexOf("=") + 1);
-                }   else {
-                    uri = uri.substring(uri.lastIndexOf("/") + 1);
-                }
+                String  id = model.getID();
                 new DownloadImageTask((ImageView) v.findViewById(R.id.thumbnail))
-                        .execute("https://img.youtube.com/vi/"+uri+"/0.jpg");
+                        .execute("https://img.youtube.com/vi/"+id+"/0.jpg");
             }
         };
         mListView.setAdapter(adapter);
@@ -83,12 +78,7 @@ public class ListActivity extends AppCompatActivity implements NavigationView.On
             public boolean onItemLongClick(AdapterView<?> arg0, View arg1,
                                            int pos, long id) {
                 video = (Video) mListView.getItemAtPosition(pos);
-                videoID =   video.getUrl();
-                if (videoID.contains("=")) {
-                    videoID = videoID.substring(videoID.lastIndexOf("=") + 1);
-                }   else {
-                    videoID = videoID.substring(videoID.lastIndexOf("/") + 1);
-                }
+                videoID =   video.getID();
                 builder.show();
                 return true;
             }

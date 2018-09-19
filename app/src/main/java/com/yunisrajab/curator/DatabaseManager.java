@@ -21,6 +21,7 @@ import org.json.JSONObject;
 
 import java.net.URL;
 import java.util.HashMap;
+import java.util.Set;
 
 public class DatabaseManager {
 
@@ -38,6 +39,7 @@ public class DatabaseManager {
     }
 
     public void updateVote(String   videoID, final int vote) {
+
         mDatabaseReference.child("Main_List").child(videoID).runTransaction(new Transaction.Handler() {
             @Override
             public Transaction.Result doTransaction(MutableData mutableData) {
@@ -46,41 +48,7 @@ public class DatabaseManager {
 
                 if (video == null) return Transaction.success(mutableData);
 
-                HashMap<String, Boolean> v   =   video.getVote();
-
-                if (v.containsKey(mUser.uid)) {
-                    Boolean  savedVote   =   Boolean.valueOf(v.get(mUser.uid));
-                    switch (vote)   {
-                        case    0:
-                            // remove vote from the post and remove self from votes
-                            if (savedVote)  video.setRating(video.getRating()-1);
-                            else video.setRating(video.getRating()+1);
-                            v.remove(mUser.uid);
-                            video.setVote(v);
-                            break;
-                        case    1:
-                            if (!savedVote)  {
-                                video.setRating(video.getRating()+2);
-                                v.put(mUser.uid,true);
-                                video.setVote(v);
-                            }
-                            break;
-                        case    -1:
-                            if (savedVote)  {
-                                video.setRating(video.getRating()-2);
-                                v.put(mUser.uid,false);
-                                video.setVote(v);
-                            }
-                            break;
-                    }
-                } else {
-                    // vote on the video and add self to votes
-                    if (vote    ==  1)  v.put(mUser.uid, true);
-                    else v.put(mUser.uid, false);
-                    video.setVote(v);
-                    video.setRating(video.getRating()+vote);
-
-                }
+                video.setRating(video.getRating()+vote);
 
                 // Set value and report transaction success
                 mutableData.setValue(video);
@@ -124,60 +92,53 @@ public class DatabaseManager {
                                                 }   else {
                                                     mDatabaseReference.child("Main_List").addListenerForSingleValueEvent(new ValueEventListener() {
                                                         @Override
-                                                        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                                                            if (dataSnapshot.hasChild(videoID)) {
+                                                        public void onDataChange(@NonNull   final DataSnapshot dataSnapshot) {
 
-                                                                mDatabaseReference.child("Main_List").runTransaction(new Transaction.Handler() {
-                                                                    @NonNull
-                                                                    @Override
-                                                                    public Transaction.Result doTransaction(@NonNull MutableData mutableData) {
+                                                            mDatabaseReference.child("Main_List").runTransaction(new Transaction.Handler() {
+                                                                @NonNull
+                                                                @Override
+                                                                public Transaction.Result doTransaction(@NonNull MutableData mutableData) {
 
-                                                                        Video video = mutableData.getValue(Video.class);
-                                                                        HashMap<String, Boolean> vote    =   video.getVote();
-                                                                        vote.put(mUser.uid,true);
-                                                                        video.setVote(vote);
+                                                                    Video   video;
+                                                                    if (dataSnapshot.hasChild(videoID)) {
+                                                                        video = mutableData.getValue(Video.class);
                                                                         video.setRating(video.getRating()+1);
                                                                         mutableData.setValue(video);
+                                                                    }   else {
+                                                                        video =   new Video(title,videoID,rating);
+                                                                        mDatabaseReference.child("Main_List")
+                                                                                .child(videoID).setValue(video);
+                                                                    }
 
-                                                                        mDatabaseReference.child("Users").child(mUser.uid).child("White_List")
-                                                                                .child(videoID).setValue(video).addOnCompleteListener(new OnCompleteListener<Void>() {
-                                                                            @Override
-                                                                            public void onComplete(@NonNull Task<Void> task) {
-                                                                                if (task.isSuccessful())    {
-                                                                                    Toast.makeText(mContext, "Success", Toast.LENGTH_SHORT).show();
-                                                                                }   else {
-                                                                                    Toast.makeText(mContext, "Failed", Toast.LENGTH_SHORT).show();
-                                                                                }
+
+                                                                    mDatabaseReference.child("Users").child(mUser.uid).child("White_List")
+                                                                            .child(videoID).setValue(video).addOnCompleteListener(new OnCompleteListener<Void>() {
+                                                                        @Override
+                                                                        public void onComplete(@NonNull Task<Void> task) {
+                                                                            if (task.isSuccessful())    {
+                                                                                Toast.makeText(mContext, "Success", Toast.LENGTH_SHORT).show();
+                                                                                Set<String> set =   mUser.getFavs();
+                                                                                HashMap<String, Boolean>    map =   mUser.getVotes();
+                                                                                set.add(videoID);
+                                                                                map.put(videoID,    true);
+                                                                                mUser.setFavs(set);
+                                                                                mUser.setVotes(map);
+                                                                                userLocalData.storeUserData(mUser);
+                                                                            }   else {
+                                                                                Toast.makeText(mContext, "Failed", Toast.LENGTH_SHORT).show();
                                                                             }
-                                                                        });
-                                                                        return Transaction.success(mutableData);
-                                                                    }
-
-                                                                    @Override
-                                                                    public void onComplete(@Nullable DatabaseError databaseError, boolean b, @Nullable DataSnapshot dataSnapshot) {
-                                                                        // Transaction completed
-                                                                        Log.d(TAG, "postTransaction:onComplete:" + databaseError);
-                                                                    }
-                                                                });
-                                                            }   else {
-                                                                HashMap<String, Boolean> vote    =   new HashMap<>();
-                                                                vote.put("DUMMY",true);
-                                                                vote.put(mUser.uid,true);
-
-                                                                final Video video =   new Video(title,url,rating,vote);
-                                                                mDatabaseReference.child("Users").child(mUser.uid).child("White_List")
-                                                                        .child(videoID).setValue(video).addOnCompleteListener(new OnCompleteListener<Void>() {
-                                                                    @Override
-                                                                    public void onComplete(@NonNull Task<Void> task) {
-                                                                        if (task.isSuccessful())    {
-                                                                            Toast.makeText(mContext, "Success", Toast.LENGTH_SHORT).show();
-                                                                            mDatabaseReference.child("Main_List").child(videoID).setValue(video);
-                                                                        }   else {
-                                                                            Toast.makeText(mContext, "Failed", Toast.LENGTH_SHORT).show();
                                                                         }
-                                                                    }
-                                                                });
-                                                            }
+                                                                    });
+                                                                    return Transaction.success(mutableData);
+                                                                }
+
+                                                                @Override
+                                                                public void onComplete(@Nullable DatabaseError databaseError, boolean b, @Nullable DataSnapshot dataSnapshot) {
+                                                                    // Transaction completed
+                                                                    Log.d(TAG, "postTransaction:onComplete:" + databaseError);
+                                                                }
+                                                            });
+
                                                         }
 
                                                         @Override
@@ -220,6 +181,10 @@ public class DatabaseManager {
                     Toast.makeText(mContext, "Moved to blacklist", Toast.LENGTH_SHORT).show();
                     mDatabaseReference.child("Users").child(mUser.uid).child("White_List")
                             .child(id).removeValue();
+                    Set<String> strings =   mUser.getFavs();
+                    strings.remove(id);
+                    mUser.setFavs(strings);
+                    userLocalData.storeUserData(mUser);
                 }   else {
                     Toast.makeText(mContext, "Failed to delete", Toast.LENGTH_SHORT).show();
                 }
