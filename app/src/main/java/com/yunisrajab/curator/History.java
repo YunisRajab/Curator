@@ -6,11 +6,13 @@ public class History {
     private String title;
     private String id;
     private String time;
+    private String key;
 
-    public History(String title, String id, String time) {
+    public History(String title, String id, String time,    String  key) {
         this.title = title;
         this.id = id;
         this.time   =   time;
+        this.key   =   key;
     }
 
     public String getTime() {
@@ -23,6 +25,10 @@ public class History {
 
     public String getId() {
         return id;
+    }
+
+    public String getKey() {
+        return key;
     }
 
     public History    ()  {}

@@ -2,27 +2,35 @@
     android:orientation="vertical"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:background="@color/colorPrimaryDark">
+    android:background="#FFFFFF">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/browserBar"
         android:orientation="horizontal"
-        android:layout_alignParentTop="true">
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="5dp">
 
 
         <EditText
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/browserUrl"
-            android:inputType="textVisiblePassword"/>
+            android:inputType="textUri"/>
 
         <!--<ActionMenuView-->
             <!--android:layout_width="wrap_content"-->
             <!--android:layout_height="wrap_content"></ActionMenuView>-->
 
     </LinearLayout>
+
+    <WebView
+        android:id="@+id/webView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/browserBar"
+        android:layout_marginTop="@dimen/activity_half_margin" />
 
     <org.xwalk.core.XWalkView
         android:id="@+id/xwalkWebView"

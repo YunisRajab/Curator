@@ -8,7 +8,7 @@ import java.util.Set;
 
 public class User {
 
-    String email, password, uid;
+    public String email, password, uid;
     HashMap<String ,    Boolean>    votes;
     Set<String> favs;
 

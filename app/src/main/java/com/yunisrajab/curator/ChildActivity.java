@@ -38,7 +38,6 @@ public class ChildActivity  extends AppCompatActivity   implements NavigationVie
 
     ListView mListView;
     String TAG = "Curator child";
-    String url;
 
     DatabaseReference   mDatabaseReference;
     User    mUser;
@@ -77,41 +76,34 @@ public class ChildActivity  extends AppCompatActivity   implements NavigationVie
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-
-        BottomNavigationView bottomNavigationView    =   findViewById(R.id.bottomNavigation);
-        bottomNavigationView.setLabelVisibilityMode(LabelVisibilityMode.LABEL_VISIBILITY_LABELED);
-        Menu menu    =   bottomNavigationView.getMenu();
-        MenuItem menuItem    =   menu.getItem(3);
-        menuItem.setChecked(true);
-        bottomNavigationView.setOnNavigationItemSelectedListener(mItemSelectedListener);
     }
-
-    private BottomNavigationView.OnNavigationItemSelectedListener   mItemSelectedListener   =   new BottomNavigationView.OnNavigationItemSelectedListener() {
-        @Override
-        public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-            Intent  intent;
-            switch (item.getItemId())   {
-                case R.id.bn_cloud:
-                    intent = new Intent(ChildActivity.this , MainActivity.class);
-                    ChildActivity.this.startActivity(intent);
-                    Log.i(TAG,"Main layout");
-                    break;
-                case R.id.bn_fav:
-                    intent = new Intent(ChildActivity.this , ListActivity.class);
-                    ChildActivity.this.startActivity(intent);
-                    Log.i(TAG,"Fave layout");
-                    break;
-                case R.id.bn_history:
-                    intent = new Intent(ChildActivity.this , HistoryActivity.class);
-                    ChildActivity.this.startActivity(intent);
-                    Log.i(TAG,"History layout");
-                    break;
-                case R.id.bn_child:
-                    break;
-            }
-            return true;
-        }
-    };
+//
+//    private BottomNavigationView.OnNavigationItemSelectedListener   mItemSelectedListener   =   new BottomNavigationView.OnNavigationItemSelectedListener() {
+//        @Override
+//        public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+//            Intent  intent;
+//            switch (item.getItemId())   {
+//                case R.id.bn_cloud:
+//                    intent = new Intent(ChildActivity.this , MainActivity.class);
+//                    ChildActivity.this.startActivity(intent);
+//                    Log.i(TAG,"Main layout");
+//                    break;
+//                case R.id.bn_fav:
+//                    intent = new Intent(ChildActivity.this , ListActivity.class);
+//                    ChildActivity.this.startActivity(intent);
+//                    Log.i(TAG,"Fave layout");
+//                    break;
+//                case R.id.bn_history:
+//                    intent = new Intent(ChildActivity.this , HistoryActivity.class);
+//                    ChildActivity.this.startActivity(intent);
+//                    Log.i(TAG,"History layout");
+//                    break;
+//                case R.id.bn_child:
+//                    break;
+//            }
+//            return true;
+//        }
+//    };
 
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
@@ -141,39 +133,34 @@ public class ChildActivity  extends AppCompatActivity   implements NavigationVie
         @Override
         public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
             Video   video = (Video) mListView.getItemAtPosition(i);
-            url = video.getID();
-            Log.e(TAG,""+url);
+            String videoID= video.getID();
+//            String  url = "https://www.youtube.com/watch?v="+videoID;
+            Log.e(TAG,""+videoID);
+
             DateFormat df = new SimpleDateFormat("yyyy/MM/dd hh:mm a");
             String date = df.format(Calendar.getInstance().getTime());
 
-            String videoID;
-            if (url.contains("=")) {
-                videoID = url.substring(url.lastIndexOf("=") + 1);
-            }   else {
-                videoID = url.substring(url.lastIndexOf("/") + 1);
-            }
+            String  key =   mDatabaseReference.child("History").push().getKey();
 
-            History history =   new History(video.getTitle(),videoID,date);
-            mDatabaseReference.child("History").push().setValue(history);
-            launchVideo();
+            History history =   new History(video.getTitle(),videoID,date,key);
+
+            mDatabaseReference.child("History").child(key).setValue(history);
+            launchVideo(videoID);
         }
     };
 
-    private void launchVideo()  {
+    private void launchVideo(String videoID)  {
         Intent intent;
-        if (!url.contains("youtube")&&!url.contains("youtu.be"))  {
-            intent = new Intent(ChildActivity.this , VideoActivity.class);
-            intent.putExtra("url",url);
-            startActivity(intent);
-            Log.i(TAG,"Video layout");
-
-        }   else    {
-            intent = new Intent(getApplicationContext() , YouTubeActivity.class);
-            intent.putExtra("url",url);
-            startActivity(intent);
-            Log.i(TAG,"YouTube layout");
-            }
-
+        intent = new Intent(getApplicationContext() , YouTubeActivity.class);
+        intent.putExtra("videoID",videoID);
+        startActivity(intent);
+        Log.i(TAG,"YouTube layout");
+//        if (!url.contains("youtube")&&!url.contains("youtu.be"))  {
+//            intent = new Intent(ChildActivity.this , VideoActivity.class);
+//            intent.putExtra("url",url);
+//            startActivity(intent);
+//            Log.i(TAG,"Video layout");
+//        }
     }
 
     @Override
@@ -183,8 +170,7 @@ public class ChildActivity  extends AppCompatActivity   implements NavigationVie
             drawer.closeDrawer(GravityCompat.START);
         } else {
             if (doubleBackPressedOnce)  {
-                Intent intent = new Intent(ChildActivity.this, CloseActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+                Intent intent = new Intent(ChildActivity.this, MainActivity.class);
                 startActivity(intent);
             }   else {
                 Toast.makeText(this, "Press back again to exit", Toast.LENGTH_SHORT).show();
@@ -197,39 +183,6 @@ public class ChildActivity  extends AppCompatActivity   implements NavigationVie
                 },  2000);
             }
 
-        }
-    }
-
-    private class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
-        ImageView bmImage;
-
-        public DownloadImageTask(ImageView bmImage) {
-            this.bmImage = bmImage;
-        }
-
-        protected Bitmap doInBackground(String... urls) {
-            String urldisplay = urls[0];
-            Bitmap mIcon11 = null;
-            try {
-                InputStream in = new java.net.URL(urldisplay).openStream();
-                mIcon11 = BitmapFactory.decodeStream(in);
-            } catch (Exception e) {
-                Log.e("Error", e.getMessage());
-                e.printStackTrace();
-            }
-            return mIcon11;
-        }
-
-        protected void onPostExecute(Bitmap result) {
-//            DisplayMetrics displayMetrics = new DisplayMetrics();
-//            getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-//            int height = displayMetrics.heightPixels;
-//            int width = displayMetrics.widthPixels;
-            bmImage.setImageBitmap(result);
-//            bmImage.setAdjustViewBounds(true);
-//            bmImage.setMaxHeight(height);
-//            bmImage.setMaxWidth(width);
-//            bmImage.setScaleType(ImageView.ScaleType.CENTER_CROP);
         }
     }
 }

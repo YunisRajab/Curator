@@ -100,6 +100,7 @@ public class ListActivity extends AppCompatActivity implements NavigationView.On
         builder  = new AlertDialog.Builder(this,    R.style.AlertDialogStyle);
         builder.setMessage("Do you want to delete this?").setPositiveButton("Delete", dialogClickListener)
                 .setNegativeButton("Cancel", dialogClickListener);
+        builder.setCancelable(false);
     }
 
     DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
@@ -197,39 +198,6 @@ public class ListActivity extends AppCompatActivity implements NavigationView.On
             Log.i(TAG,"YouTube layout");
         }
 
-    }
-
-    private class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
-        ImageView bmImage;
-
-        public DownloadImageTask(ImageView bmImage) {
-            this.bmImage = bmImage;
-        }
-
-        protected Bitmap doInBackground(String... urls) {
-            String urldisplay = urls[0];
-            Bitmap mIcon11 = null;
-            try {
-                InputStream in = new java.net.URL(urldisplay).openStream();
-                mIcon11 = BitmapFactory.decodeStream(in);
-            } catch (Exception e) {
-                Log.e("Error", e.getMessage());
-                e.printStackTrace();
-            }
-            return mIcon11;
-        }
-
-        protected void onPostExecute(Bitmap result) {
-//            DisplayMetrics displayMetrics = new DisplayMetrics();
-//            getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-//            int height = displayMetrics.heightPixels;
-//            int width = displayMetrics.widthPixels;
-            bmImage.setImageBitmap(result);
-//            bmImage.setAdjustViewBounds(true);
-//            bmImage.setMaxHeight(height);
-//            bmImage.setMaxWidth(width);
-//            bmImage.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        }
     }
 
     @Override

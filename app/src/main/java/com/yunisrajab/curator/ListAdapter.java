@@ -96,7 +96,7 @@ public class ListAdapter extends RecyclerView.Adapter<ListAdapter.ViewHolder> {
                                 }
                                 if (compoundButton.getId()  ==  R.id.downvote)  {
                                     votes.put(video.getID(),    false);
-                                    if (holder.downbox.isChecked()) {
+                                    if (holder.upbox.isChecked()) {
                                         video.setRating(video.getRating()-2);
                                         mDatabaseManager.updateVote(video.getID(), -2);
                                     }   else {
@@ -106,14 +106,13 @@ public class ListAdapter extends RecyclerView.Adapter<ListAdapter.ViewHolder> {
                                     holder.upbox.setChecked(false);
                                 }
                             }
+                    mUser.setVotes(votes);
+                    mUserLocalData.storeUserData(mUser);
+                    notifyDataSetChanged();
                 }
-
-                mUser.setVotes(votes);
-                mUserLocalData.storeUserData(mUser);
-
-                notifyDataSetChanged();
             }
         };
+
         holder.upbox.setOnCheckedChangeListener(listener);
         holder.downbox.setOnCheckedChangeListener(listener);
         holder.favbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -121,17 +120,38 @@ public class ListAdapter extends RecyclerView.Adapter<ListAdapter.ViewHolder> {
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
                 if (compoundButton.isPressed()) {
                     Set<String> strings =   mUser.getFavs();
+                    HashMap<String, Boolean> votes =   mUser.getVotes();
                     if (b)  {
                         strings.add(video.getID());
                         mDatabaseReference.child("Users").child(mUser.uid).child("White_List")
                                 .child(video.getID()).setValue(video);
+                        if (votes.containsKey(video.getID()))    {
+                            if (!votes.get(video.getID()))   {
+                                votes.put(video.getID(),    true);
+                                video.setRating(video.getRating()+2);
+                                mDatabaseManager.updateVote(video.getID(), 2);
+                                holder.downbox.setChecked(false);
+                            }
+                        }   else {
+                            votes.put(video.getID(),    true);
+                            if (holder.downbox.isChecked()) {
+                                video.setRating(video.getRating()+2);
+                                mDatabaseManager.updateVote(video.getID(), 2);
+                            }   else    {
+                                video.setRating(video.getRating()+1);
+                                mDatabaseManager.updateVote(video.getID(), 1);
+                            }
+                            holder.downbox.setChecked(false);
+                        }
                     }   else {
                         strings.remove(video.getID());
                         mDatabaseReference.child("Users").child(mUser.uid).child("White_List")
                                 .child(video.getID()).removeValue();
                     }
                     mUser.setFavs(strings);
+                    mUser.setVotes(votes);
                     mUserLocalData.storeUserData(mUser);
+                    notifyDataSetChanged();
                 }
             }
         });

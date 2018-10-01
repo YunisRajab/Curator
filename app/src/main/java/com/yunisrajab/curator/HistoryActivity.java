@@ -29,9 +29,12 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.firebase.ui.database.FirebaseListAdapter;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
+import com.google.firebase.database.ValueEventListener;
 
 import java.io.InputStream;
 
@@ -39,7 +42,7 @@ public class HistoryActivity    extends AppCompatActivity   implements Navigatio
 
     ListView mListView;
     String TAG = "Curator list";
-    String url, videoID;
+    String key;
     DatabaseReference mDatabaseReference;
     User    mUser;
     UserLocalData   mUserLocalData;
@@ -78,7 +81,7 @@ public class HistoryActivity    extends AppCompatActivity   implements Navigatio
             public boolean onItemLongClick(AdapterView<?> arg0, View arg1,
                                            int pos, long id) {
                 mHistory = (History) mListView.getItemAtPosition(pos);
-                videoID =   mHistory.getId();
+                key =   mHistory.getKey();
                 builder.show();
                 return true;
             }
@@ -107,7 +110,7 @@ public class HistoryActivity    extends AppCompatActivity   implements Navigatio
         public void onClick(DialogInterface dialog, int which) {
             switch (which){
                 case DialogInterface.BUTTON_POSITIVE:
-                    mDatabaseReference.child("History").child(videoID).removeValue();
+                    mDatabaseReference.child("History").child(key).removeValue();
                     break;
 //                case DialogInterface.BUTTON_NEGATIVE:
 //                    //No button clicked
@@ -184,39 +187,6 @@ public class HistoryActivity    extends AppCompatActivity   implements Navigatio
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
-    }
-
-    private class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
-        ImageView bmImage;
-
-        public DownloadImageTask(ImageView bmImage) {
-            this.bmImage = bmImage;
-        }
-
-        protected Bitmap doInBackground(String... urls) {
-            String urldisplay = urls[0];
-            Bitmap mIcon11 = null;
-            try {
-                InputStream in = new java.net.URL(urldisplay).openStream();
-                mIcon11 = BitmapFactory.decodeStream(in);
-            } catch (Exception e) {
-                Log.e("Error", e.getMessage());
-                e.printStackTrace();
-            }
-            return mIcon11;
-        }
-
-        protected void onPostExecute(Bitmap result) {
-//            DisplayMetrics displayMetrics = new DisplayMetrics();
-//            getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-//            int height = displayMetrics.heightPixels;
-//            int width = displayMetrics.widthPixels;
-            bmImage.setImageBitmap(result);
-//            bmImage.setAdjustViewBounds(true);
-//            bmImage.setMaxHeight(height);
-//            bmImage.setMaxWidth(width);
-//            bmImage.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        }
     }
 
     @Override

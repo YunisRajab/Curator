@@ -31,7 +31,7 @@ public class DatabaseManager {
     DatabaseReference mDatabaseReference;
     Context mContext;
 
-    DatabaseManager (Context    context)  {
+    public DatabaseManager (Context    context)  {
         mContext    =   context;
         mDatabaseReference  = FirebaseDatabase.getInstance().getReference();
         userLocalData   =   new UserLocalData(mContext);
@@ -192,6 +192,16 @@ public class DatabaseManager {
         });
     }
 
-//    public void addToHistory()
+    public void addWebsite  (String site,   String  host)   {
+        mDatabaseReference.child("Users").child(mUser.uid).child("Websites")
+                .child(host).setValue(site).addOnCompleteListener(new OnCompleteListener<Void>() {
+            @Override
+            public void onComplete(@NonNull Task<Void> task) {
+                if (task.isSuccessful())    {
+                    Toast.makeText(mContext, "Success!", Toast.LENGTH_SHORT).show();
+                }   else Toast.makeText(mContext, "Failed", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
 
 }

@@ -21,10 +21,12 @@ import com.google.firebase.database.FirebaseDatabase;
 import org.json.JSONObject;
 
 import java.net.URL;
+import java.util.HashMap;
+import java.util.HashSet;
 
 public class Settings   extends AppCompatActivity {
 
-    Button addButton, logoutButton;
+    Button addButton, logoutButton, resetButton;
     EditText urlText;
     String TAG = "Curator";
     Button  loginButton,    registerButton;
@@ -42,6 +44,7 @@ public class Settings   extends AppCompatActivity {
 
         addButton = (Button)    findViewById(R.id.addButton);
         logoutButton = (Button) findViewById(R.id.logoutButton);
+        resetButton = (Button) findViewById(R.id.resetButton);
 
         urlText = (EditText)    findViewById(R.id.urlText);
 
@@ -74,6 +77,18 @@ public class Settings   extends AppCompatActivity {
                 Settings.this.startActivity(intent);
                 Log.i("Curator", "Login layout");
                 finish();
+            }
+        });
+
+        resetButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mUser.setVotes(new HashMap<String, Boolean>());
+                mUser.setFavs(new HashSet<String>());
+                userLocalData.storeUserData(mUser);
+                mUser   =   userLocalData.getLoggedUser();
+                if (mUser.getFavs().isEmpty()   &&  mUser.getVotes().isEmpty())
+                    Toast.makeText(Settings.this, "Reset!", Toast.LENGTH_SHORT).show();
             }
         });
     }

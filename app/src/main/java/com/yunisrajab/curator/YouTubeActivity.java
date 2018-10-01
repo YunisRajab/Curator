@@ -30,7 +30,7 @@ public class YouTubeActivity extends YouTubeBaseActivity implements YouTubePlaye
     private Handler mHandler = null;
     private SeekBar mSeekBar;
     private String TAG = "YT";
-    String url;
+    String videoID;
 
     private static final int RECOVERY_REQUEST = 1;
     private YouTubePlayerView youTubeView;
@@ -58,7 +58,7 @@ public class YouTubeActivity extends YouTubeBaseActivity implements YouTubePlaye
 
         mHandler = new Handler();
 
-        url = getIntent().getStringExtra("url");
+        videoID = getIntent().getStringExtra("videoID");
 
         //TODO add seek controls (10 sec increment) and sync with seekbar
 //        Button seekToButton = (Button) findViewById(R.id.seekButton);
@@ -78,7 +78,7 @@ public class YouTubeActivity extends YouTubeBaseActivity implements YouTubePlaye
         displayCurrentTime();
 
         if (!wasRestored) {
-            player.cueVideo(url);
+            player.cueVideo(videoID);
         }
 
         player.setPlayerStyle(YouTubePlayer.PlayerStyle.MINIMAL);

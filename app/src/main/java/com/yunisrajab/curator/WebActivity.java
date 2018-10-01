@@ -1,30 +1,47 @@
 package com.yunisrajab.curator;
 
+import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.InputFilter;
 import android.text.Spanned;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import org.xwalk.core.XWalkResourceClient;
 import org.xwalk.core.XWalkView;
 
 public class WebActivity    extends AppCompatActivity {
 
     XWalkView   mXWalkView;
     EditText    urlText;
+    WebView mWebView;
+    String  TAG =   "Curator webview";
+    AlertDialog.Builder mBuilder;
+    boolean isXwalk;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.web_browser);
 
-        mXWalkView  =   (XWalkView) findViewById(R.id.xwalkWebView);
+        mBuilder    = new AlertDialog.Builder(this,    R.style.AlertDialogStyle);
+
+        mBuilder.setMessage("Pick view").setPositiveButton("Xwalk", dialogClickListener)
+                .setNegativeButton("Webview", dialogClickListener);
+        mBuilder.setCancelable(false);
+
         urlText = (EditText) findViewById(R.id.browserUrl);
         urlText.setFilters(new InputFilter[] {
                 new InputFilter.AllCaps() {
@@ -46,14 +63,69 @@ public class WebActivity    extends AppCompatActivity {
                     String  url =   urlText.getText().toString().trim();
                     if (!url.startsWith("http://www."))    url =   "http://www."+url;
                     urlText.setText(url);
-                    mXWalkView.load(url,  null);
-                    System.out.println("xwalk"+mXWalkView.getTitle());
-                    System.out.println("xwalk"+mXWalkView.getUrl());
+                    if (isXwalk)   mXWalkView.loadUrl(url);
+                    else mWebView.loadUrl(url);
                     return true;
                 }
                 return false;
             }
         });
 
+        mBuilder.show();
+    }
+
+    DialogInterface.OnClickListener dialogClickListener =   new DialogInterface.OnClickListener() {
+        @Override
+        public void onClick(DialogInterface dialogInterface, int i) {
+            switch (i){
+                case DialogInterface.BUTTON_POSITIVE:
+                    initXwalk();
+                    break;
+                case DialogInterface.BUTTON_NEGATIVE:
+                    initWebview();
+                    break;
+            }
+        }
+    };
+
+    private void initXwalk()  {
+        isXwalk =   true;
+        mXWalkView  =   (XWalkView) findViewById(R.id.xwalkWebView);
+        mXWalkView.setResourceClient(mXWalkResourceClient);
+    }
+
+    private void initWebview()  {
+        isXwalk =   false;
+        mWebView    =   findViewById(R.id.webView);
+        mWebView.setWebViewClient(mWebViewClient);
+    }
+
+    XWalkResourceClient mXWalkResourceClient    =   new XWalkResourceClient(mXWalkView) {
+        @Override
+        public boolean shouldOverrideUrlLoading(XWalkView view, String url) {
+            urlText.setText(url);
+            Log.e(TAG,  url);
+            if (url.equals("https://www.fb.com/"))  return true;
+            return super.shouldOverrideUrlLoading(view, url);
+        }
+    };
+
+    WebViewClient   mWebViewClient  =   new WebViewClient() {
+
+        @Override
+        public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+            String  url =   request.getUrl().toString();
+            Log.i(TAG,  url);
+            view.loadUrl(url);
+            urlText.setText(url);
+            return true;
+        }
+    };
+
+    @Override
+    public void onBackPressed() {
+        if (mWebView.canGoBack()) {
+            mWebView.goBack();
+        }   else super.onBackPressed();
     }
 }
