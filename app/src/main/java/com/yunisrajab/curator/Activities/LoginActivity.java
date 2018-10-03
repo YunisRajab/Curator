@@ -1,4 +1,4 @@
-package com.yunisrajab.curator;
+package com.yunisrajab.curator.Activities;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -21,6 +21,10 @@ import com.google.firebase.auth.FirebaseAuthInvalidUserException;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.yunisrajab.curator.DatabaseManager;
+import com.yunisrajab.curator.R;
+import com.yunisrajab.curator.User;
+import com.yunisrajab.curator.UserLocalData;
 
 public class LoginActivity  extends AppCompatActivity {
 
@@ -31,6 +35,7 @@ public class LoginActivity  extends AppCompatActivity {
     String  TAG =   "Login";
     FirebaseAuth    mAuth;
     String  mEmail, mPassword,  mUid;
+    DatabaseManager mDatabaseManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,6 +61,7 @@ public class LoginActivity  extends AppCompatActivity {
 
         mDatabaseReference  = FirebaseDatabase.getInstance().getReference();
         mAuth   =   FirebaseAuth.getInstance();
+        mDatabaseManager    =   new DatabaseManager(this);
 
         registerButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -121,9 +127,10 @@ public class LoginActivity  extends AppCompatActivity {
                     }
                 }   else    {
                     mUid =   mAuth.getCurrentUser().getUid();
-                    User    user    =   new User(mEmail, mPassword,   mUid);
+                    User user    =   new User(mEmail, mPassword,   mUid);
                     userLocalData.setUserLoggedIn(true);
                     userLocalData.storeUserData(user);
+                    mDatabaseManager.retrieve();
 
                     Intent intent = new Intent(LoginActivity.this, MainActivity.class);
                     LoginActivity.this.startActivity(intent);

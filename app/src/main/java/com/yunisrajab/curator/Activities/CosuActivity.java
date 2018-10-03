@@ -1,8 +1,5 @@
-package com.yunisrajab.curator;
+package com.yunisrajab.curator.Activities;
 
-import android.app.Activity;
-import android.app.ActivityManager;
-import android.app.admin.DeviceAdminReceiver;
 import android.app.admin.DevicePolicyManager;
 import android.app.admin.SystemUpdatePolicy;
 import android.content.ComponentName;
@@ -11,20 +8,16 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.BatteryManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.UserManager;
 import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import org.apache.commons.io.IOUtils;
-
-import java.io.InputStream;
+import com.yunisrajab.curator.AdminReceiver;
+import com.yunisrajab.curator.R;
 
 public class CosuActivity extends AppCompatActivity {
 

@@ -1,8 +1,7 @@
-package com.yunisrajab.curator;
+package com.yunisrajab.curator.Activities;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -12,15 +11,15 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
+
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.yunisrajab.curator.DatabaseManager;
+import com.yunisrajab.curator.R;
+import com.yunisrajab.curator.User;
+import com.yunisrajab.curator.UserLocalData;
 
-import org.json.JSONObject;
-
-import java.net.URL;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -32,7 +31,7 @@ public class Settings   extends AppCompatActivity {
     Button  loginButton,    registerButton;
     TextView emailText, passText;
     UserLocalData userLocalData;
-    User    mUser;
+    User mUser;
     DatabaseReference mDatabaseReference;
     FirebaseAuth mAuth;
     DatabaseManager mDatabaseManager;
@@ -71,6 +70,7 @@ public class Settings   extends AppCompatActivity {
         logoutButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                mDatabaseManager.backup();
                 mAuth.signOut();
                 Intent intent = new Intent(Settings.this, LoginActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);

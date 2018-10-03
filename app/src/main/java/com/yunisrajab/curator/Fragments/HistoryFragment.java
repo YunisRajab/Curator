@@ -4,8 +4,12 @@ package com.yunisrajab.curator.Fragments;
 import android.app.Activity;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.DividerItemDecoration;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,33 +20,36 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.firebase.ui.database.FirebaseListAdapter;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
+import com.google.firebase.database.ValueEventListener;
+import com.yunisrajab.curator.Adapters.FavouritesAdapter;
+import com.yunisrajab.curator.Adapters.HistoryAdapter;
 import com.yunisrajab.curator.DatabaseManager;
 import com.yunisrajab.curator.DownloadImageTask;
 import com.yunisrajab.curator.History;
-import com.yunisrajab.curator.HistoryActivity;
+import com.yunisrajab.curator.OnGetDataListener;
 import com.yunisrajab.curator.R;
 import com.yunisrajab.curator.User;
 import com.yunisrajab.curator.UserLocalData;
+import com.yunisrajab.curator.Video;
+
+import java.util.ArrayList;
+import java.util.Collections;
 
 /**
  * A simple {@link Fragment} subclass.
  */
 public class HistoryFragment extends Fragment {
 
-    ListView mListView;
+    RecyclerView mRecyclerView;
     String TAG = "Curator list";
-    String key;
-    DatabaseReference mDatabaseReference;
-    User mUser;
-    UserLocalData mUserLocalData;
-    boolean doubleBackPressedOnce   =   false;
-    AlertDialog.Builder builder;
-    History mHistory;
-    DatabaseManager mDatabaseManager;
     View    rootView;
+    ArrayList<History>  mArrayList;
+    HistoryAdapter  mAdapter;
 
     public HistoryFragment() {
         // Required empty public constructor
@@ -55,73 +62,60 @@ public class HistoryFragment extends Fragment {
         Log.i(TAG,"History layout");
         rootView    =   inflater.inflate(R.layout.fragment_history,    container,  false);
 
-        mDatabaseManager    =   new DatabaseManager(getActivity());
-        mListView   =   (ListView)  rootView.findViewById(R.id.historyList);
-        mUserLocalData  =   new UserLocalData(getActivity());
-        mUser   =   mUserLocalData.getLoggedUser();
-        mDatabaseReference  = FirebaseDatabase.getInstance().getReference().child("Users").child(mUser.uid);
-
-        ReverseFirebaseListAdapter<History> adapter =   new ReverseFirebaseListAdapter<History>(
-                getActivity(),   History.class,
-                R.layout.history_item,    mDatabaseReference.child("History").orderByChild("time")
-        ) {
-            @Override
-            protected void populateView(View v, History model, int position) {
-                ((TextView)v.findViewById(R.id.itemName)).setText(model.getTitle());
-                ((TextView)v.findViewById(R.id.itemTime)).setText(model.getTime());
-                String  uri = model.getId();
-                new DownloadImageTask((ImageView) v.findViewById(R.id.thumbnail))
-                        .execute("https://img.youtube.com/vi/"+uri+"/0.jpg");
-            }
-        };
-        mListView.setAdapter(adapter);
-        mListView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemLongClick(AdapterView<?> arg0, View arg1,
-                                           int pos, long id) {
-                mHistory = (History) mListView.getItemAtPosition(pos);
-                key =   mHistory.getKey();
-                builder.show();
-                return true;
-            }
-        });
-
-        builder  = new AlertDialog.Builder(getActivity(),    R.style.AlertDialogStyle);
-        builder.setMessage("Do you want to delete this?").setPositiveButton("Delete", dialogClickListener)
-                .setNegativeButton("Cancel", dialogClickListener);
+        mArrayList  =   new ArrayList<>();
+        mRecyclerView   =   (RecyclerView)  rootView.findViewById(R.id.historyList);
+        getHistory();
 
         return rootView;
     }
 
+    public void getHistory(){
 
-    DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
-        @Override
-        public void onClick(DialogInterface dialog, int which) {
-            switch (which){
-                case DialogInterface.BUTTON_POSITIVE:
-                    mDatabaseReference.child("History").child(key).removeValue();
-                    break;
-//                case DialogInterface.BUTTON_NEGATIVE:
-//                    //No button clicked
-//                    Toast.makeText(ListActivity.this, "Cancel", Toast.LENGTH_SHORT).show();
-//                    break;
+        final OnGetDataListener onGetDataListener   =   new OnGetDataListener() {
+            @Override
+            public void onStart() {
+
             }
-        }
-    };
 
-    public abstract class ReverseFirebaseListAdapter<T> extends FirebaseListAdapter<T> {
+            @Override
+            public void onSuccess(ArrayList data) {
+                mArrayList  =   data;
+                // use this setting to improve performance if you know that changes
+                // in content do not change the layout size of the RecyclerView
+                mRecyclerView.setHasFixedSize(true);
+                // use a linear layout manager
+                mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
+                mAdapter = new HistoryAdapter(getActivity(),    mArrayList);
+                mRecyclerView.addItemDecoration(new DividerItemDecoration(mRecyclerView.getContext(), DividerItemDecoration.VERTICAL));
+                mRecyclerView.setAdapter(mAdapter);
+            }
 
-        public ReverseFirebaseListAdapter(Activity activity, Class<T> modelClass, int modelLayout, Query ref) {
-            super(activity, modelClass, modelLayout, ref);
-        }
+            @Override
+            public void onFailed(DatabaseError databaseError) {
 
-        public ReverseFirebaseListAdapter(Activity activity, Class<T> modelClass, int modelLayout, DatabaseReference ref) {
-            super(activity, modelClass, modelLayout, ref);
-        }
+            }
+        };
 
-        @Override
-        public T getItem(int position) {
-            return super.getItem(getCount() - (position + 1));
-        }
+        onGetDataListener.onStart();
+        UserLocalData userLocalData    =   new UserLocalData(getActivity());
+        User user  =   userLocalData.getLoggedUser();
+        mArrayList.clear();
+        FirebaseDatabase.getInstance().getReference().child("Users").child(user.uid).child("History").orderByChild("time")
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                        for (DataSnapshot child : dataSnapshot.getChildren()) {
+                            mArrayList.add(child.getValue(History.class));
+                        }
+                        Collections.reverse(mArrayList);
+                        onGetDataListener.onSuccess(mArrayList);
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError databaseError) {
+                        Log.e(TAG,  databaseError.getDetails());
+                    }
+                });
     }
 }

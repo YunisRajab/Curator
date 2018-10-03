@@ -1,41 +1,31 @@
 package com.yunisrajab.curator.Fragments;
 
 import android.app.ProgressDialog;
-import android.content.Context;
-import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.design.bottomnavigation.LabelVisibilityMode;
-import android.support.design.widget.BottomNavigationView;
-import android.support.design.widget.NavigationView;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.yunisrajab.curator.DatabaseManager;
-import com.yunisrajab.curator.ListAdapter;
+import com.yunisrajab.curator.Adapters.ListAdapter;
+import com.yunisrajab.curator.OnGetDataListener;
 import com.yunisrajab.curator.R;
+import com.yunisrajab.curator.User;
+import com.yunisrajab.curator.UserLocalData;
 import com.yunisrajab.curator.Video;
 
 import java.util.ArrayList;
@@ -46,11 +36,7 @@ import java.util.Collections;
  */
 public class MainFragment extends Fragment {
 
-    Button addButton, logoutButton;
-    EditText urlText;
     String TAG = "Curator";
-    Button  loginButton,    registerButton;
-    TextView    emailText, passText;
     DatabaseReference mDatabaseReference;
     RecyclerView    mRecyclerView;
     ListAdapter mAdapter;
@@ -86,31 +72,20 @@ public class MainFragment extends Fragment {
         mDatabaseReference  = FirebaseDatabase.getInstance().getReference();
         mRecyclerView   =   (RecyclerView)  rootView.findViewById(R.id.cloudListR);
         mSwipeRefreshLayout =   (SwipeRefreshLayout)    rootView.findViewById(R.id.swipeRefresh);
-
-
-        mSwipeRefreshLayout.setOnRefreshListener(mOnRefreshListener);
+        mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                getList();
+            }
+        });
         mSwipeRefreshLayout.setColorSchemeColors(getActivity().getColor(R.color.colorPrimary));
 
         return rootView;
     }
 
-    SwipeRefreshLayout.OnRefreshListener    mOnRefreshListener  =   new SwipeRefreshLayout.OnRefreshListener() {
-        @Override
-        public void onRefresh() {
-            mAdapter    =   new ListAdapter(getActivity(),   new ArrayList<Video>());
-            getList();
-        }
-    };
-
-    public interface OnGetDataListener {
-        void onStart();
-        void onSuccess(ArrayList data);
-        void onFailed(DatabaseError databaseError);
-    }
-
     public void getList(){
 
-        final OnGetDataListener   onGetDataListener =   new OnGetDataListener() {
+        final OnGetDataListener onGetDataListener =   new OnGetDataListener() {
             @Override
             public void onStart() {
 

@@ -1,7 +1,5 @@
-package com.yunisrajab.curator;
+package com.yunisrajab.curator.Activities;
 
-import android.app.Activity;
-import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Handler;
 import android.support.annotation.NonNull;
@@ -12,54 +10,49 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
-import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.DividerItemDecoration;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.FrameLayout;
-import android.widget.TextView;
 import android.widget.Toast;
-
-import com.firebase.ui.database.FirebaseListAdapter;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.Query;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+import com.yunisrajab.curator.Adapters.FavouritesAdapter;
+import com.yunisrajab.curator.DatabaseManager;
 import com.yunisrajab.curator.Fragments.FavouritesFragment;
 import com.yunisrajab.curator.Fragments.HistoryFragment;
 import com.yunisrajab.curator.Fragments.MainFragment;
+import com.yunisrajab.curator.OnGetDataListener;
+import com.yunisrajab.curator.R;
+import com.yunisrajab.curator.User;
+import com.yunisrajab.curator.UserLocalData;
+import com.yunisrajab.curator.Video;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 
 public class MainActivity extends AppCompatActivity {
 
-
-    Button addButton, logoutButton;
-    EditText urlText;
     String TAG = "Curator";
-    Button  loginButton,    registerButton;
-    TextView    emailText, passText;
     BottomNavigationView    mBottomNavigationView;
     FrameLayout mainFrame;
+    Toolbar mToolbar;
     UserLocalData userLocalData;
-    User    mUser;
-    DatabaseReference   mDatabaseReference;
-    RecyclerView    mRecyclerView;
-    ListAdapter    mAdapter;
-    boolean doubleBackPressedOnce   =   false;
+    User mUser;
     DatabaseManager mDatabaseManager;
     MainFragment mMainFragment;
     FavouritesFragment mFavouritesFragment;
     HistoryFragment mHistoryFragment;
-    ArrayList<Video>    mArrayList;
-    ProgressDialog  mProgressDialog;
-    SwipeRefreshLayout  mSwipeRefreshLayout;
+    boolean doubleBackPressedOnce   =   false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,11 +75,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
         mDatabaseManager    =   new DatabaseManager(this);
-//        mArrayList  =   new ArrayList<>();
-//        mProgressDialog =   new ProgressDialog(this);
-//        mDatabaseReference  = FirebaseDatabase.getInstance().getReference();
-//        mRecyclerView   =   (RecyclerView)  findViewById(R.id.cloudListR);
-//        mSwipeRefreshLayout =   (SwipeRefreshLayout)    findViewById(R.id.swipeRefresh);
 
         // Get intent, action and MIME type
         Intent intent = getIntent();
@@ -98,7 +86,6 @@ public class MainActivity extends AppCompatActivity {
                 String sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
                 if (sharedText != null) {
                     mDatabaseManager.upload(sharedText,1);
-//                    getList();
                 }
             }
         }
@@ -108,9 +95,9 @@ public class MainActivity extends AppCompatActivity {
         mFavouritesFragment =   new FavouritesFragment();
         mHistoryFragment    =   new HistoryFragment();
 
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        toolbar.setTitle("Cloud");
-        setSupportActionBar(toolbar);
+        mToolbar = (Toolbar) findViewById(R.id.toolbar);
+        mToolbar.setTitle("Lighthouse");
+        setSupportActionBar(mToolbar);
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(drawerListener);
@@ -123,85 +110,7 @@ public class MainActivity extends AppCompatActivity {
         mBottomNavigationView.setOnNavigationItemSelectedListener(bottomListener);
 
         setFragment(mMainFragment);
-
-//        mSwipeRefreshLayout.setOnRefreshListener(mOnRefreshListener);
-//        mSwipeRefreshLayout.setColorSchemeColors(this.getColor(R.color.colorPrimary));
     }
-//
-//    SwipeRefreshLayout.OnRefreshListener    mOnRefreshListener  =   new SwipeRefreshLayout.OnRefreshListener() {
-//        @Override
-//        public void onRefresh() {
-//            mAdapter    =   new ListAdapter(MainActivity.this,   new ArrayList<Video>());
-//            getList();
-//        }
-//    };
-//
-//    public interface OnGetDataListener {
-//        void onStart();
-//        void onSuccess(ArrayList data);
-//        void onFailed(DatabaseError databaseError);
-//    }
-//
-//    public void getList(){
-//
-//        final OnGetDataListener   onGetDataListener =   new OnGetDataListener() {
-//            @Override
-//            public void onStart() {
-//
-//            }
-//
-//            @Override
-//            public void onSuccess(ArrayList data) {
-//                mArrayList  =   data;
-//                // use this setting to improve performance if you know that changes
-//                // in content do not change the layout size of the RecyclerView
-//                mRecyclerView.setHasFixedSize(true);
-//                // use a linear layout manager
-//                mRecyclerView.setLayoutManager(new LinearLayoutManager(MainActivity.this));
-//                mAdapter = new ListAdapter(MainActivity.this,    mArrayList);
-//                mRecyclerView.addItemDecoration(new DividerItemDecoration(mRecyclerView.getContext(), DividerItemDecoration.VERTICAL));
-//                mRecyclerView.setAdapter(mAdapter);
-//                if (mProgressDialog != null && mProgressDialog.isShowing()) {
-//                    mProgressDialog.dismiss();
-//                }
-//                mSwipeRefreshLayout.setRefreshing(false);
-//            }
-//
-//            @Override
-//            public void onFailed(DatabaseError databaseError) {
-//                Log.e(TAG, databaseError.getMessage());
-//                Toast.makeText(MainActivity.this, databaseError.getMessage(), Toast.LENGTH_SHORT).show();
-//            }
-//        };
-//
-//        onGetDataListener.onStart();
-//        mArrayList.clear();
-//        mDatabaseReference.child("Main_List").orderByChild("rating").addListenerForSingleValueEvent(new ValueEventListener() {
-//            @Override
-//            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-//
-//                for (DataSnapshot child : dataSnapshot.getChildren()) {
-//                    mArrayList.add(child.getValue(Video.class));
-//                }
-//                Collections.reverse(mArrayList);
-//                onGetDataListener.onSuccess(mArrayList);
-//            }
-//
-//            @Override
-//            public void onCancelled(@NonNull DatabaseError databaseError) {
-//                onGetDataListener.onFailed(databaseError);
-//            }
-//        });
-//    }
-//
-//    @Override
-//    protected void onStart() {
-//        super.onStart();
-//        mProgressDialog.setMessage("LOADING...");
-//        mProgressDialog.setIndeterminate(true);
-//        mProgressDialog.show();
-//        getList();
-//    }
 
     private void setFragment(Fragment   fragment)  {
         FragmentTransaction fragmentTransaction =   getSupportFragmentManager().beginTransaction();
@@ -217,12 +126,15 @@ public class MainActivity extends AppCompatActivity {
             switch (item.getItemId())   {
                 case R.id.bn_cloud:
                     setFragment(mMainFragment);
+                    mToolbar.setTitle("Lighthouse");
                     break;
                 case R.id.bn_fav:
                     setFragment(mFavouritesFragment);
+                    mToolbar.setTitle("Favourites");
                     break;
                 case R.id.bn_history:
                     setFragment(mHistoryFragment);
+                    mToolbar.setTitle("History");
                     break;
                 case R.id.bn_child:
                     intent = new Intent(MainActivity.this , ChildActivity.class);
@@ -237,7 +149,6 @@ public class MainActivity extends AppCompatActivity {
     private NavigationView.OnNavigationItemSelectedListener drawerListener  =   new NavigationView.OnNavigationItemSelectedListener() {
         @Override
         public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
-            // Handle navigation view item clicks here.
             int id = menuItem.getItemId();
             Intent  intent;
             switch (id) {
@@ -285,23 +196,6 @@ public class MainActivity extends AppCompatActivity {
                 },  2000);
             }
 
-        }
-    }
-
-
-    public abstract class ReverseFirebaseListAdapter<T> extends FirebaseListAdapter<T> {
-
-        public ReverseFirebaseListAdapter(Activity activity, Class<T> modelClass, int modelLayout, Query ref) {
-            super(activity, modelClass, modelLayout, ref);
-        }
-
-        public ReverseFirebaseListAdapter(Activity activity, Class<T> modelClass, int modelLayout, DatabaseReference ref) {
-            super(activity, modelClass, modelLayout, ref);
-        }
-
-        @Override
-        public T getItem(int position) {
-            return super.getItem(getCount() - (position + 1));
         }
     }
 }

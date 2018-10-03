@@ -1,4 +1,4 @@
-package com.yunisrajab.curator;
+package com.yunisrajab.curator.Activities;
 
 import android.app.Dialog;
 import android.content.Context;
@@ -18,6 +18,8 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.EditText;
 import android.widget.Toast;
+
+import com.yunisrajab.curator.R;
 
 import org.xwalk.core.XWalkResourceClient;
 import org.xwalk.core.XWalkView;

@@ -1,16 +1,14 @@
-package com.yunisrajab.curator;
+package com.yunisrajab.curator.Activities;
 
 import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.MediaController;
 import android.widget.VideoView;
-import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
-import android.view.View.OnClickListener;
-import android.widget.TextView;
+
+import com.yunisrajab.curator.R;
 
 public class VideoActivity extends AppCompatActivity {
 

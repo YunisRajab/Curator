@@ -171,20 +171,33 @@ public class DatabaseManager {
         }).start();
     }
 
-    public void delete  (final Video   video,  final String    id) {
-
-        mDatabaseReference.child("Users").child(mUser.uid).child("Black_List")
-                .child(id).setValue(video).addOnCompleteListener(new OnCompleteListener<Void>() {
+    public void delete  (Video   video) {
+        final String    id  =   video.getID();
+        mDatabaseReference.child("Users").child(mUser.uid).child("White_List").child(id)
+                .removeValue().addOnCompleteListener(new OnCompleteListener<Void>() {
             @Override
             public void onComplete(@NonNull Task<Void> task) {
                 if (task.isSuccessful())    {
-                    Toast.makeText(mContext, "Moved to blacklist", Toast.LENGTH_SHORT).show();
-                    mDatabaseReference.child("Users").child(mUser.uid).child("White_List")
-                            .child(id).removeValue();
+                    Toast.makeText(mContext, "Deleted", Toast.LENGTH_SHORT).show();
                     Set<String> strings =   mUser.getFavs();
                     strings.remove(id);
                     mUser.setFavs(strings);
                     userLocalData.storeUserData(mUser);
+                }   else {
+                    Toast.makeText(mContext, "Failed to delete", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
+    public void delete  (History   history) {
+        final String    key  =   history.getKey();
+        mDatabaseReference.child("Users").child(mUser.uid).child("History").child(key)
+                .removeValue().addOnCompleteListener(new OnCompleteListener<Void>() {
+            @Override
+            public void onComplete(@NonNull Task<Void> task) {
+                if (task.isSuccessful())    {
+                    Toast.makeText(mContext, "Deleted", Toast.LENGTH_SHORT).show();
                 }   else {
                     Toast.makeText(mContext, "Failed to delete", Toast.LENGTH_SHORT).show();
                 }
@@ -200,6 +213,27 @@ public class DatabaseManager {
                 if (task.isSuccessful())    {
                     Toast.makeText(mContext, "Success!", Toast.LENGTH_SHORT).show();
                 }   else Toast.makeText(mContext, "Failed", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+    //                TODO save favourites and votes on server to be retrieved on re-login
+    public void backup()    {
+        mUser.getFavs();
+        mUser.getVotes();
+    }
+
+    public void retrieve()  {
+        mDatabaseReference.child("Users").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                if (dataSnapshot.hasChild(mUser.uid))   {
+//                    get favs and votes and save them user
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
             }
         });
     }

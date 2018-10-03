@@ -1,4 +1,4 @@
-package com.yunisrajab.curator;
+package com.yunisrajab.curator.Activities;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -18,6 +18,8 @@ import com.google.android.youtube.player.YouTubeInitializationResult;
 import com.google.android.youtube.player.YouTubePlayer;
 import com.google.android.youtube.player.YouTubePlayerView;
 import com.google.android.youtube.player.YouTubePlayer.Provider;
+import com.yunisrajab.curator.DeveloperKey;
+import com.yunisrajab.curator.R;
 
 public class YouTubeActivity extends YouTubeBaseActivity implements YouTubePlayer.OnInitializedListener, View.OnClickListener {
 
