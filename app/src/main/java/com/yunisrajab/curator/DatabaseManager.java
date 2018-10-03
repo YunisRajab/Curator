@@ -218,6 +218,8 @@ public class DatabaseManager {
     }
     //                TODO save favourites and votes on server to be retrieved on re-login
     public void backup()    {
+//        TODO push to cloud
+        mDatabaseReference.child("Users").child(mUser.uid).child("Votes").setValue(mUser.getVotes());
         mUser.getFavs();
         mUser.getVotes();
     }
@@ -237,5 +239,4 @@ public class DatabaseManager {
             }
         });
     }
-
 }
