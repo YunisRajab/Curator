@@ -10,6 +10,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.URLUtil;
 import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -17,10 +18,13 @@ import android.widget.Toast;
 
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.yunisrajab.curator.Activities.MainActivity;
+import com.yunisrajab.curator.Activities.WebActivity;
 import com.yunisrajab.curator.Activities.YouTubeActivity;
 import com.yunisrajab.curator.DatabaseManager;
 import com.yunisrajab.curator.DownloadImageTask;
 import com.yunisrajab.curator.History;
+import com.yunisrajab.curator.HtmlParser;
 import com.yunisrajab.curator.R;
 import com.yunisrajab.curator.User;
 import com.yunisrajab.curator.UserLocalData;
@@ -39,14 +43,6 @@ public class ChildAdapter extends RecyclerView.Adapter<ChildAdapter.ViewHolder> 
     private DatabaseManager mDatabaseManager;
     AlertDialog.Builder builder;
     String TAG = "curator fav adapter";
-
-    public interface OnItemClickListener {
-        public void onItemClicked(int position);
-    }
-
-    public interface OnItemLongClickListener {
-        public boolean onItemLongClicked(int position);
-    }
 
     // Provide a suitable constructor (depends on the kind of dataset)
     public ChildAdapter(Context context, ArrayList<Video> arrayList) {
@@ -71,7 +67,13 @@ public class ChildAdapter extends RecyclerView.Adapter<ChildAdapter.ViewHolder> 
         // - replace the contents of the view with that element
         final Video video = mArrayList.get(position);
         holder.title.setText(video.getTitle());
-        new DownloadImageTask((ImageView) holder.thumbnail)
+        if (video.getID().contains("@"))    {
+            String  url =   video.getID().replace("@",".");
+            if (URLUtil.isHttpsUrl("https://www."+url))    url =   "https://www."+url;
+            else url    =   "http://www."+url;
+//            new HtmlParser(holder.thumbnail).execute(url);
+            holder.thumbnail.setImageResource(R.drawable.web_image);
+        }   else    new DownloadImageTask((ImageView) holder.thumbnail)
                 .execute("https://img.youtube.com/vi/"+video.getID()+"/0.jpg");
     }
 
@@ -107,7 +109,7 @@ public class ChildAdapter extends RecyclerView.Adapter<ChildAdapter.ViewHolder> 
         public View.OnClickListener mOnClickListener    =   new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Video   video = (Video) mArrayList.get(getAdapterPosition());
+                Video   video = mArrayList.get(getAdapterPosition());
                 String videoID  = video.getID();
 
                 Log.e(TAG,""+videoID);
@@ -116,7 +118,7 @@ public class ChildAdapter extends RecyclerView.Adapter<ChildAdapter.ViewHolder> 
                 User    user    =   userLocalData.getLoggedUser();
                 DatabaseReference   databaseReference   =   FirebaseDatabase.getInstance().getReference()
                         .child("Users").child(user.uid).child("History");
-                DateFormat df = new SimpleDateFormat("yyyy/MM/dd hh:mm a");
+                DateFormat df = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
                 String date = df.format(Calendar.getInstance().getTime());
                 String  key =   databaseReference.push().getKey();
 
@@ -125,10 +127,14 @@ public class ChildAdapter extends RecyclerView.Adapter<ChildAdapter.ViewHolder> 
                 databaseReference.child(key).setValue(history);
 
                 Intent intent;
-                intent = new Intent(mContext , YouTubeActivity.class);
+                if (videoID.contains("@"))  {
+                    intent  =   new Intent(mContext, WebActivity.class);
+                }   else {
+                    intent = new Intent(mContext , YouTubeActivity.class);
+                    Log.i(TAG,"YouTube layout");
+                }
                 intent.putExtra("videoID",videoID);
                 mContext.startActivity(intent);
-                Log.i(TAG,"YouTube layout");
             }
         };
 

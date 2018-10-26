@@ -8,6 +8,8 @@ import android.widget.ImageView;
 
 import java.io.InputStream;
 
+//TODO  use this only once per item instead of every time a fragment/activity is opened
+
 public class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
     ImageView bmImage;
 
@@ -33,7 +35,11 @@ public class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
 //            getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
 //            int height = displayMetrics.heightPixels;
 //            int width = displayMetrics.widthPixels;
-        bmImage.setImageBitmap(result);
+        if (result  !=  null)   {
+            bmImage.setImageBitmap(result);
+        }   else {
+
+        }
 //            bmImage.setAdjustViewBounds(true);
 //            bmImage.setMaxHeight(height);
 //            bmImage.setMaxWidth(width);

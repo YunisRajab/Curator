@@ -9,6 +9,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.URLUtil;
 import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -19,6 +20,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.yunisrajab.curator.DatabaseManager;
 import com.yunisrajab.curator.DownloadImageTask;
 import com.yunisrajab.curator.History;
+import com.yunisrajab.curator.HtmlParser;
 import com.yunisrajab.curator.R;
 import com.yunisrajab.curator.User;
 import com.yunisrajab.curator.UserLocalData;
@@ -67,7 +69,12 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
         History history = mArrayList.get(position);
         holder.title.setText(history.getTitle());
         holder.time.setText(history.getTime());
-        new DownloadImageTask((ImageView) holder.thumbnail)
+        if (history.getId().contains("@"))    {
+            String  url =   history.getId().replace("@",".");
+            if (URLUtil.isHttpsUrl("https://www."+url))    url =   "https://www."+url;
+            else url    =   "http://www."+url;
+            new HtmlParser(holder.thumbnail).execute(url);
+        }   else    new DownloadImageTask((ImageView) holder.thumbnail)
                 .execute("https://img.youtube.com/vi/"+history.getId()+"/0.jpg");
     }
 

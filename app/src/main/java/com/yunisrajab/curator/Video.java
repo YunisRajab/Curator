@@ -1,8 +1,9 @@
 package com.yunisrajab.curator;
 
+import java.io.Serializable;
 import java.util.HashMap;
 
-public class Video {
+public class Video  implements Serializable {
 
     private  String title;
     private String id;
@@ -21,6 +22,10 @@ public class Video {
     public String getID() {return id;}
 
     public void setRating   (int    rating) {this.rating    =   rating;}
+
+    public void setUrl(String id) {
+        this.id = id;
+    }
 
     public Video    ()  {}
 }

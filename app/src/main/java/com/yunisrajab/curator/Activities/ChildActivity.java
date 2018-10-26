@@ -46,6 +46,9 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 
 
 public class ChildActivity  extends AppCompatActivity   implements NavigationView.OnNavigationItemSelectedListener {
@@ -59,7 +62,6 @@ public class ChildActivity  extends AppCompatActivity   implements NavigationVie
     ArrayList<Video>    mArrayList;
     RecyclerView    mRecyclerView;
     ChildAdapter    mAdapter;
-    ProgressDialog mProgressDialog;
     SwipeRefreshLayout  mSwipeRefreshLayout;
 
     @Override
@@ -74,7 +76,6 @@ public class ChildActivity  extends AppCompatActivity   implements NavigationVie
         mUser   =   mUserLocalData.getLoggedUser();
         mDatabaseReference  = FirebaseDatabase.getInstance().getReference().child("Users").child(mUser.uid);
 
-        mProgressDialog =   new ProgressDialog(this);
         mSwipeRefreshLayout =   (SwipeRefreshLayout)    findViewById(R.id.swipeRefresh);
         mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
@@ -107,9 +108,6 @@ public class ChildActivity  extends AppCompatActivity   implements NavigationVie
     @Override
     public void onStart() {
         super.onStart();
-        mProgressDialog.setMessage("LOADING...");
-        mProgressDialog.setIndeterminate(true);
-        mProgressDialog.show();
         getFavourites();
     }
 
@@ -122,8 +120,21 @@ public class ChildActivity  extends AppCompatActivity   implements NavigationVie
             }
 
             @Override
-            public void onSuccess(ArrayList data) {
-                mArrayList  =   data;
+            public void onSuccess(HashMap<String,HashMap<String,String>> map) {
+                for (String key: map.keySet()) {
+                    HashMap<String,String> sMap    =   map.get(key);
+                    Video   video   =   new Video(sMap.get("title"),
+                            sMap.get("id"), Integer.valueOf(String.valueOf(sMap.get("rating"))));
+                    mArrayList.add(video);
+                }
+                Collections.sort(mArrayList,    new Comparator<Video>() {
+                    @Override
+                    public int compare(Video video, Video t1) {
+                        return video.getTitle().compareTo(t1.getTitle());
+                    }
+                });
+                Collections.reverse(mArrayList);
+
                 // use this setting to improve performance if you know that changes
                 // in content do not change the layout size of the RecyclerView
                 mRecyclerView.setHasFixedSize(true);
@@ -132,9 +143,6 @@ public class ChildActivity  extends AppCompatActivity   implements NavigationVie
                 mAdapter = new ChildAdapter(ChildActivity.this,    mArrayList);
                 mRecyclerView.addItemDecoration(new DividerItemDecoration(mRecyclerView.getContext(), DividerItemDecoration.VERTICAL));
                 mRecyclerView.setAdapter(mAdapter);
-                if (mProgressDialog != null && mProgressDialog.isShowing()) {
-                    mProgressDialog.dismiss();
-                }
                 mSwipeRefreshLayout.setRefreshing(false);
             }
 
@@ -151,10 +159,9 @@ public class ChildActivity  extends AppCompatActivity   implements NavigationVie
                     @Override
                     public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
-                        for (DataSnapshot child : dataSnapshot.getChildren()) {
-                            mArrayList.add(child.getValue(Video.class));
-                        }
-                        onGetDataListener.onSuccess(mArrayList);
+                        HashMap<String,HashMap<String,String>>   map =
+                                (HashMap<String, HashMap<String, String>>)   dataSnapshot.getValue();
+                        onGetDataListener.onSuccess(map);
                     }
 
                     @Override

@@ -12,6 +12,7 @@ public class User {
     public String email, password, uid;
     HashMap<String ,    Boolean>    votes;
     Set<String> favs;
+    boolean isSuper;
 
     public User(String email, String password,  String  uid) {
         this.email = email;
@@ -65,5 +66,13 @@ public class User {
     public Set<String> getFavs() {
         if (favs    ==  null)   return new HashSet<>();
         else return favs;
+    }
+
+    public void setSU(boolean   isSuper) {
+        this.isSuper    =   isSuper;
+    }
+
+    public boolean isSuper() {
+        return isSuper;
     }
 }

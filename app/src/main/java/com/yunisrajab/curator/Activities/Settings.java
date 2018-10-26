@@ -62,7 +62,7 @@ public class Settings   extends AppCompatActivity {
         addButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                mDatabaseManager.upload(urlText.getText().toString().trim(),1);
+                mDatabaseManager.upload(urlText.getText().toString().trim());
                 urlText.getText().clear();
                 addButton.setEnabled(false);
             }
@@ -70,7 +70,6 @@ public class Settings   extends AppCompatActivity {
         logoutButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                mDatabaseManager.backup();
                 mAuth.signOut();
                 Intent intent = new Intent(Settings.this, LoginActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);

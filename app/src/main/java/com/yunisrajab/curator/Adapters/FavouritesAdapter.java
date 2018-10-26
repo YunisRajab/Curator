@@ -3,26 +3,32 @@ package com.yunisrajab.curator.Adapters;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.RecyclerView;
+import android.text.Html;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CheckBox;
+import android.webkit.URLUtil;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.DatabaseError;
 import com.yunisrajab.curator.DatabaseManager;
 import com.yunisrajab.curator.DownloadImageTask;
+import com.yunisrajab.curator.HtmlParser;
+import com.yunisrajab.curator.OnGetDataListener;
 import com.yunisrajab.curator.R;
-import com.yunisrajab.curator.User;
-import com.yunisrajab.curator.UserLocalData;
 import com.yunisrajab.curator.Video;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -33,14 +39,6 @@ public class FavouritesAdapter extends RecyclerView.Adapter<FavouritesAdapter.Vi
     private DatabaseManager mDatabaseManager;
     AlertDialog.Builder builder;
     String TAG = "curator fav adapter";
-
-    public interface OnItemClickListener {
-        public void onItemClicked(int position);
-    }
-
-    public interface OnItemLongClickListener {
-        public boolean onItemLongClicked(int position);
-    }
 
     // Provide a suitable constructor (depends on the kind of dataset)
     public FavouritesAdapter(Context context, ArrayList<Video> arrayList) {
@@ -65,8 +63,64 @@ public class FavouritesAdapter extends RecyclerView.Adapter<FavouritesAdapter.Vi
         // - replace the contents of the view with that element
         Video video = mArrayList.get(position);
         holder.title.setText(video.getTitle());
-        new DownloadImageTask((ImageView) holder.thumbnail)
+
+        if (video.getID().contains("@"))    {
+            String  url =   video.getID().replace("@",".");
+            if (URLUtil.isHttpsUrl("https://www."+url))    url =   "https://www."+url;
+            else url    =   "http://www."+url;
+//            new HtmlParser(holder.thumbnail).execute(url);
+            holder.thumbnail.setImageResource(R.drawable.web_image);
+            holder.customText.setVisibility(View.VISIBLE);
+        }   else    new DownloadImageTask((ImageView) holder.thumbnail)
                 .execute("https://img.youtube.com/vi/"+video.getID()+"/0.jpg");
+    }
+
+    public void getElement(String   url,    final   ImageView   mImageView)    {
+        OnGetDataListener onGetDataListener   =   new OnGetDataListener() {
+            @Override
+            public void onStart() {
+
+            }
+
+            @Override
+            public void onSuccess(HashMap<String, HashMap<String, String>> data) {
+
+                String html = data.get("key").get("ref");
+                Log.e(TAG, "HELLO");
+                try {
+                    System.out.println(html);
+                    Bitmap mIcon11 = null;
+                    InputStream inputStream = new java.net.URL(html).openStream();
+                    mIcon11 = BitmapFactory.decodeStream(inputStream);
+                    mImageView.setImageBitmap(mIcon11);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+
+            @Override
+            public void onFailed(DatabaseError databaseError) {
+
+            }
+        };
+
+        onGetDataListener.onStart();
+        try {
+            Log.e(TAG, url+2);
+            Document doc = Jsoup.connect(url).get();
+            Log.e(TAG, url+3);
+            Element element =   doc.select("apple-touch-icon").first();
+            String  html    =   url+element.attr("href");
+
+            HashMap<String, HashMap<String,String>> map =   new HashMap<>();
+            HashMap<String,String> map1 =   new HashMap<>();
+            map1.put("ref",html);
+            map.put("key",map1);
+            onGetDataListener.onSuccess(map);
+        }   catch (Exception    e)  {
+            e.printStackTrace();
+        }
     }
 
     // Return the size of your dataset (invoked by the layout manager)
@@ -81,11 +135,13 @@ public class FavouritesAdapter extends RecyclerView.Adapter<FavouritesAdapter.Vi
     public class ViewHolder extends RecyclerView.ViewHolder {
         public TextView title;
         public ImageView    thumbnail;
+        public TextView    customText;
 
         public ViewHolder(View v) {
             super(v);
             title = v.findViewById(R.id.itemName);
             thumbnail   =   v.findViewById(R.id.thumbnail);
+            customText   =   v.findViewById(R.id.customtext);
 
             v.setOnClickListener(mOnClickListener);
             v.setOnLongClickListener(mOnLongClickListener);

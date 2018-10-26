@@ -1,7 +1,11 @@
 package com.yunisrajab.curator.Adapters;
 
 import android.content.Context;
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,8 +21,10 @@ import com.yunisrajab.curator.User;
 import com.yunisrajab.curator.UserLocalData;
 import com.yunisrajab.curator.Video;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 
 public class ListAdapter extends RecyclerView.Adapter<ListAdapter.ViewHolder> {
@@ -31,9 +37,10 @@ public class ListAdapter extends RecyclerView.Adapter<ListAdapter.ViewHolder> {
     private DatabaseManager mDatabaseManager;
     private DatabaseReference   mDatabaseReference;
     String  TAG =   "curator adapter";
+    String  type;
 
     // Provide a suitable constructor (depends on the kind of dataset)
-    public ListAdapter(Context context, ArrayList<Video> arrayList) {
+    public ListAdapter(Context context, ArrayList<Video> arrayList, String  type) {
         mArrayList = arrayList;
         mInflater = LayoutInflater.from(context);
         mContext    =   context;
@@ -41,6 +48,7 @@ public class ListAdapter extends RecyclerView.Adapter<ListAdapter.ViewHolder> {
         mUser   =   mUserLocalData.getLoggedUser();
         mDatabaseManager    =   new DatabaseManager(mContext);
         mDatabaseReference  = FirebaseDatabase.getInstance().getReference();
+        this.type   =   type;
     }
 
     // Create new views (invoked by the layout manager)
@@ -110,6 +118,7 @@ public class ListAdapter extends RecyclerView.Adapter<ListAdapter.ViewHolder> {
                             }
                     mUser.setVotes(votes);
                     mUserLocalData.storeUserData(mUser);
+                    mDatabaseReference.child("Users").child(mUser.uid).child("Votes").setValue(votes);
                     notifyDataSetChanged();
                 }
             }
@@ -127,29 +136,34 @@ public class ListAdapter extends RecyclerView.Adapter<ListAdapter.ViewHolder> {
                         strings.add(video.getID());
                         mDatabaseReference.child("Users").child(mUser.uid).child("White_List")
                                 .child(video.getID()).setValue(video);
+                        mDatabaseReference.child("In_Progress").child(video.getID()).child(mUser.uid).setValue(true);
+                        mDatabaseManager.updateVoteInProgress(video.getID(),    1);
                         if (votes.containsKey(video.getID()))    {
                             if (!votes.get(video.getID()))   {
-                                votes.put(video.getID(),    true);
                                 video.setRating(video.getRating()+2);
                                 mDatabaseManager.updateVote(video.getID(), 2);
-                                holder.downbox.setChecked(false);
                             }
                         }   else {
-                            votes.put(video.getID(),    true);
-                            if (holder.downbox.isChecked()) {
-                                video.setRating(video.getRating()+2);
-                                mDatabaseManager.updateVote(video.getID(), 2);
-                            }   else    {
-                                video.setRating(video.getRating()+1);
-                                mDatabaseManager.updateVote(video.getID(), 1);
-                            }
-                            holder.downbox.setChecked(false);
+                            video.setRating(video.getRating()+1);
+                            mDatabaseManager.updateVote(video.getID(), 1);
                         }
+                        votes.put(video.getID(),    true);
                     }   else {
                         strings.remove(video.getID());
                         mDatabaseReference.child("Users").child(mUser.uid).child("White_List")
                                 .child(video.getID()).removeValue();
+                        mDatabaseReference.child("In_Progress").child(video.getID()).child(mUser.uid).setValue(false);
+                        mDatabaseManager.updateVoteInProgress(video.getID(),    -1);
                     }
+                    Intent  intent  =   new Intent("update");
+                    Bundle  bundle  =   new Bundle();
+                    HashMap<Boolean,    Video>  map =   new HashMap<>();
+                    map.put(b,  video);
+                    bundle.putSerializable("map", map);
+                    intent.putExtras(bundle);
+                    LocalBroadcastManager.getInstance(mContext).sendBroadcast(intent);
+
+                    mDatabaseReference.child("Users").child(mUser.uid).child("Votes").setValue(votes);
                     mUser.setFavs(strings);
                     mUser.setVotes(votes);
                     mUserLocalData.storeUserData(mUser);

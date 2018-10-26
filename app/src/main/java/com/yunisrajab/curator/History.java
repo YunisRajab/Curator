@@ -1,7 +1,9 @@
 package com.yunisrajab.curator;
 
 
-public class History {
+import java.io.Serializable;
+
+public class History    implements Serializable {
 
     private String title;
     private String id;
@@ -29,6 +31,10 @@ public class History {
 
     public String getKey() {
         return key;
+    }
+
+    public void setUrl(String id) {
+        this.id = id;
     }
 
     public History    ()  {}

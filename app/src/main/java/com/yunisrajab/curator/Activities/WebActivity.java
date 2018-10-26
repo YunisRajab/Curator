@@ -32,11 +32,14 @@ public class WebActivity    extends AppCompatActivity {
     String  TAG =   "Curator webview";
     AlertDialog.Builder mBuilder;
     boolean isXwalk;
+    String  domain;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.web_browser);
+
+        domain = getIntent().getStringExtra("videoID").replace("@",".");
 
         mBuilder    = new AlertDialog.Builder(this,    R.style.AlertDialogStyle);
 
@@ -79,12 +82,15 @@ public class WebActivity    extends AppCompatActivity {
     DialogInterface.OnClickListener dialogClickListener =   new DialogInterface.OnClickListener() {
         @Override
         public void onClick(DialogInterface dialogInterface, int i) {
+            String  url =   "http://www."+domain;
             switch (i){
                 case DialogInterface.BUTTON_POSITIVE:
                     initXwalk();
+                    mXWalkView.loadUrl(url);
                     break;
                 case DialogInterface.BUTTON_NEGATIVE:
                     initWebview();
+                    mWebView.loadUrl(url);
                     break;
             }
         }
@@ -105,9 +111,8 @@ public class WebActivity    extends AppCompatActivity {
     XWalkResourceClient mXWalkResourceClient    =   new XWalkResourceClient(mXWalkView) {
         @Override
         public boolean shouldOverrideUrlLoading(XWalkView view, String url) {
+            if (!url.contains(domain))  return true;
             urlText.setText(url);
-            Log.e(TAG,  url);
-            if (url.equals("https://www.fb.com/"))  return true;
             return super.shouldOverrideUrlLoading(view, url);
         }
     };

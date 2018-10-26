@@ -29,12 +29,26 @@
                                           </PersistentState>
                                         </value>
                                       </entry>
+                                      <entry key="image">
+                                        <value>
+                                          <PersistentState>
+                                            <option name="values">
+                                              <map>
+                                                <entry key="trimmed" value="true" />
+                                              </map>
+                                            </option>
+                                          </PersistentState>
+                                        </value>
+                                      </entry>
                                     </map>
                                   </option>
                                   <option name="values">
                                     <map>
-                                      <entry key="outputName" value="ic_action_downvote" />
+                                      <entry key="assetType" value="IMAGE" />
+                                      <entry key="imageAsset" value="C:\Users\Yunis Rajab\Downloads\Download-WWW-16.png" />
+                                      <entry key="outputName" value="www" />
                                       <entry key="theme" value="CUSTOM" />
+                                      <entry key="themeColor" value="ff3232" />
                                     </map>
                                   </option>
                                 </PersistentState>
